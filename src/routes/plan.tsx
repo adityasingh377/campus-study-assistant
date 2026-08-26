@@ -36,16 +36,16 @@ function PlanScreen() {
   return (
     <>
       <Screen withNav>
-        <header className="mb-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
-          <div className="min-w-0">
-            <p className="label-mono text-ember mb-1 font-bold">{strategy.subject}</p>
-            <h1 className="text-3xl font-extrabold tracking-tight">Your Exam Strategy</h1>
-            <p className="text-muted-foreground mt-2 text-xs">Goal: {strategy.goalLabel}</p>
+        <header className="mb-10">
+          <p className="label-mono text-ember mb-1 font-bold">{strategy.subject}</p>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+            <h1 className="text-2xl font-extrabold tracking-tight">Your Exam Strategy</h1>
+            <div className="shrink-0 text-right">
+              <p className="label-mono text-muted-foreground">Remaining</p>
+              <p className="font-bold">{formatMinutes(strategy.totalMinutes)}</p>
+            </div>
           </div>
-          <div className="shrink-0 text-right">
-            <p className="label-mono text-muted-foreground">Remaining</p>
-            <p className="font-bold">{formatMinutes(strategy.totalMinutes)}</p>
-          </div>
+          <p className="text-muted-foreground mt-2 text-xs">Goal: {strategy.goalLabel}</p>
         </header>
 
         <div className="mb-4 flex items-center gap-2">
