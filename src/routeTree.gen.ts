@@ -14,6 +14,7 @@ import { Route as AnalyzingRouteImport } from './routes/analyzing'
 import { Route as PlanRouteImport } from './routes/plan'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as StudyTopicIdRouteImport } from './routes/study.$topicId'
 import { Route as TopicTopicIdRouteImport } from './routes/topic.$topicId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const UploadRoute = UploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudyTopicIdRoute = StudyTopicIdRouteImport.update({
+  id: '/study/$topicId',
+  path: '/study/$topicId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicTopicIdRoute = TopicTopicIdRouteImport.update({
   id: '/topic/$topicId',
   path: '/topic/$topicId',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/plan': typeof PlanRoute
   '/setup': typeof SetupRoute
   '/upload': typeof UploadRoute
+  '/study/$topicId': typeof StudyTopicIdRoute
   '/topic/$topicId': typeof TopicTopicIdRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/plan': typeof PlanRoute
   '/setup': typeof SetupRoute
   '/upload': typeof UploadRoute
+  '/study/$topicId': typeof StudyTopicIdRoute
   '/topic/$topicId': typeof TopicTopicIdRoute
 }
 export interface FileRoutesById {
@@ -70,14 +78,28 @@ export interface FileRoutesById {
   '/plan': typeof PlanRoute
   '/setup': typeof SetupRoute
   '/upload': typeof UploadRoute
+  '/study/$topicId': typeof StudyTopicIdRoute
   '/topic/$topicId': typeof TopicTopicIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/analyzing' | '/plan' | '/setup' | '/upload' | '/topic/$topicId'
+    | '/'
+    | '/analyzing'
+    | '/plan'
+    | '/setup'
+    | '/upload'
+    | '/study/$topicId'
+    | '/topic/$topicId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analyzing' | '/plan' | '/setup' | '/upload' | '/topic/$topicId'
+  to:
+    | '/'
+    | '/analyzing'
+    | '/plan'
+    | '/setup'
+    | '/upload'
+    | '/study/$topicId'
+    | '/topic/$topicId'
   id:
     | '__root__'
     | '/'
@@ -85,6 +107,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/setup'
     | '/upload'
+    | '/study/$topicId'
     | '/topic/$topicId'
   fileRoutesById: FileRoutesById
 }
@@ -94,6 +117,7 @@ export interface RootRouteChildren {
   PlanRoute: typeof PlanRoute
   SetupRoute: typeof SetupRoute
   UploadRoute: typeof UploadRoute
+  StudyTopicIdRoute: typeof StudyTopicIdRoute
   TopicTopicIdRoute: typeof TopicTopicIdRoute
 }
 
@@ -134,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/study/$topicId': {
+      id: '/study/$topicId'
+      path: '/study/$topicId'
+      fullPath: '/study/$topicId'
+      preLoaderRoute: typeof StudyTopicIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/topic/$topicId': {
       id: '/topic/$topicId'
       path: '/topic/$topicId'
@@ -150,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlanRoute: PlanRoute,
   SetupRoute: SetupRoute,
   UploadRoute: UploadRoute,
+  StudyTopicIdRoute: StudyTopicIdRoute,
   TopicTopicIdRoute: TopicTopicIdRoute,
 }
 export const routeTree = rootRouteImport
