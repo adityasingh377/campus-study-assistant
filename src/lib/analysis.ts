@@ -99,12 +99,14 @@ export function analyzeExam(input: {
 
   // Time remaining decides how much actually fits into "Study First".
   const budget = Math.round(totalMinutes * 0.8);
+  // With very little time left, keep the list short enough to act on.
+  const maxFirst = totalMinutes <= 180 ? 3 : totalMinutes <= 420 ? 4 : 6;
   const studyFirst: RankedTopic[] = [];
   const studyLater: RankedTopic[] = [];
   let used = 0;
 
   for (const item of ranked) {
-    if (used + item.topic.estimatedMinutes <= budget && studyFirst.length < 5) {
+    if (used + item.topic.estimatedMinutes <= budget && studyFirst.length < maxFirst) {
       studyFirst.push(item);
       used += item.topic.estimatedMinutes;
     } else {
