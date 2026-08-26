@@ -66,9 +66,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const strategy = useMemo(() => {
-    const option = TIME_OPTIONS.find((o) => o.id === state.timeId) ?? TIME_OPTIONS[0];
-    const minutes = state.timeId === "custom" ? state.customMinutes : option.minutes;
-    const timeLabel = state.timeId === "custom" ? `${minutes} minutes` : option.label;
+    const option = TIME_OPTIONS.find((o) => o.id === state.timeId);
+    const minutes = state.timeId === "custom" ? state.customMinutes : (option?.minutes ?? 180);
+    const timeLabel = state.timeId === "custom" ? `${minutes} minutes` : (option?.label ?? "3 Hours");
     return analyzeExam({ goal: state.goal, totalMinutes: minutes, timeLabel });
   }, [state.timeId, state.customMinutes, state.goal]);
 
