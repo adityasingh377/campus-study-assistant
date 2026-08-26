@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnalyzingRouteImport } from './routes/analyzing'
+import { Route as PlanRouteImport } from './routes/plan'
+import { Route as SetupRouteImport } from './routes/setup'
+import { Route as UploadRouteImport } from './routes/upload'
+import { Route as StudyTopicIdRouteImport } from './routes/study.$topicId'
+import { Route as TopicTopicIdRouteImport } from './routes/topic.$topicId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalyzingRoute = AnalyzingRouteImport.update({
+  id: '/analyzing',
+  path: '/analyzing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanRoute = PlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UploadRoute = UploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudyTopicIdRoute = StudyTopicIdRouteImport.update({
+  id: '/study/$topicId',
+  path: '/study/$topicId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopicTopicIdRoute = TopicTopicIdRouteImport.update({
+  id: '/topic/$topicId',
+  path: '/topic/$topicId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analyzing': typeof AnalyzingRoute
+  '/plan': typeof PlanRoute
+  '/setup': typeof SetupRoute
+  '/upload': typeof UploadRoute
+  '/study/$topicId': typeof StudyTopicIdRoute
+  '/topic/$topicId': typeof TopicTopicIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analyzing': typeof AnalyzingRoute
+  '/plan': typeof PlanRoute
+  '/setup': typeof SetupRoute
+  '/upload': typeof UploadRoute
+  '/study/$topicId': typeof StudyTopicIdRoute
+  '/topic/$topicId': typeof TopicTopicIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analyzing': typeof AnalyzingRoute
+  '/plan': typeof PlanRoute
+  '/setup': typeof SetupRoute
+  '/upload': typeof UploadRoute
+  '/study/$topicId': typeof StudyTopicIdRoute
+  '/topic/$topicId': typeof TopicTopicIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/analyzing'
+    | '/plan'
+    | '/setup'
+    | '/upload'
+    | '/study/$topicId'
+    | '/topic/$topicId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/analyzing'
+    | '/plan'
+    | '/setup'
+    | '/upload'
+    | '/study/$topicId'
+    | '/topic/$topicId'
+  id:
+    | '__root__'
+    | '/'
+    | '/analyzing'
+    | '/plan'
+    | '/setup'
+    | '/upload'
+    | '/study/$topicId'
+    | '/topic/$topicId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyzingRoute: typeof AnalyzingRoute
+  PlanRoute: typeof PlanRoute
+  SetupRoute: typeof SetupRoute
+  UploadRoute: typeof UploadRoute
+  StudyTopicIdRoute: typeof StudyTopicIdRoute
+  TopicTopicIdRoute: typeof TopicTopicIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analyzing': {
+      id: '/analyzing'
+      path: '/analyzing'
+      fullPath: '/analyzing'
+      preLoaderRoute: typeof AnalyzingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plan': {
+      id: '/plan'
+      path: '/plan'
+      fullPath: '/plan'
+      preLoaderRoute: typeof PlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/upload': {
+      id: '/upload'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/study/$topicId': {
+      id: '/study/$topicId'
+      path: '/study/$topicId'
+      fullPath: '/study/$topicId'
+      preLoaderRoute: typeof StudyTopicIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/topic/$topicId': {
+      id: '/topic/$topicId'
+      path: '/topic/$topicId'
+      fullPath: '/topic/$topicId'
+      preLoaderRoute: typeof TopicTopicIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyzingRoute: AnalyzingRoute,
+  PlanRoute: PlanRoute,
+  SetupRoute: SetupRoute,
+  UploadRoute: UploadRoute,
+  StudyTopicIdRoute: StudyTopicIdRoute,
+  TopicTopicIdRoute: TopicTopicIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
