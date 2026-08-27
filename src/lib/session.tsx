@@ -42,8 +42,17 @@ type SessionContextValue = {
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+const toMeta = (file: File): FileMeta => ({
+  name: file.name,
+  size: file.size,
+  type: file.type,
+});
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SessionState>(DEFAULT_STATE);
+  const [syllabusFile, setSyllabusFileState] = useState<File | null>(null);
+  const [pyqFiles, setPyqFilesState] = useState<File[]>([]);
+
 
   // Read persisted state after hydration to keep SSR output stable.
   useEffect(() => {
