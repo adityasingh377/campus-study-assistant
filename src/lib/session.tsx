@@ -4,17 +4,21 @@ import type { ReactNode } from "react";
 import { TIME_OPTIONS, type Goal } from "./study-data";
 import { analyzeExam, type ExamStrategy } from "./analysis";
 
+export type FileMeta = { name: string; size: number; type: string };
+
 export type SessionState = {
-  syllabusUploaded: boolean;
-  pyqUploaded: boolean;
+  /** Metadata for the selected syllabus file (persisted across the flow). */
+  syllabusMeta: FileMeta | null;
+  /** Metadata for the selected PYQ files. */
+  pyqMetas: FileMeta[];
   timeId: string;
   customMinutes: number;
   goal: Goal;
 };
 
 const DEFAULT_STATE: SessionState = {
-  syllabusUploaded: false,
-  pyqUploaded: false,
+  syllabusMeta: null,
+  pyqMetas: [],
   timeId: "3h",
   customMinutes: 240,
   goal: "score_well",
@@ -27,7 +31,14 @@ type SessionContextValue = {
   update: (patch: Partial<SessionState>) => void;
   reset: () => void;
   strategy: ExamStrategy;
+  /** Actual File objects, kept in memory only (not serialisable). */
+  syllabusFile: File | null;
+  pyqFiles: File[];
+  setSyllabusFile: (file: File | null) => void;
+  addPyqFiles: (files: File[]) => void;
+  removePyqFile: (index: number) => void;
 };
+
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
