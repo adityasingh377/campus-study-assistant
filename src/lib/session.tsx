@@ -78,12 +78,44 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const reset = useCallback(() => {
     setState(DEFAULT_STATE);
+    setSyllabusFileState(null);
+    setPyqFilesState([]);
     try {
       window.sessionStorage.removeItem(STORAGE_KEY);
     } catch {
       /* ignore */
     }
   }, []);
+
+  const setSyllabusFile = useCallback(
+    (file: File | null) => {
+      setSyllabusFileState(file);
+      update({ syllabusMeta: file ? toMeta(file) : null });
+    },
+    [update],
+  );
+
+  const addPyqFiles = useCallback(
+    (files: File[]) => {
+      setPyqFilesState((prev) => {
+        const next = [...prev, ...files.filter((f) => !prev.some((p) => p.name === f.name))];
+        update({ pyqMetas: next.map(toMeta) });
+        return next;
+      });
+    },
+    [update],
+  );
+
+  const removePyqFile = useCallback(
+    (index: number) => {
+      setPyqFilesState((prev) => {
+        const next = prev.filter((_, i) => i !== index);
+        update({ pyqMetas: next.map(toMeta) });
+        return next;
+      });
+    },
+    [update],
+  );
 
   const strategy = useMemo(() => {
     const option = TIME_OPTIONS.find((o) => o.id === state.timeId);
@@ -92,7 +124,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return analyzeExam({ goal: state.goal, totalMinutes: minutes, timeLabel });
   }, [state.timeId, state.customMinutes, state.goal]);
 
-  const value = useMemo(() => ({ state, update, reset, strategy }), [state, update, reset, strategy]);
+  const value = useMemo(
+    () => ({
+      state,
+      update,
+      reset,
+      strategy,
+      syllabusFile,
+      pyqFiles,
+      setSyllabusFile,
+      addPyqFiles,
+      removePyqFile,
+    }),
+    [
+      state,
+      update,
+      reset,
+      strategy,
+      syllabusFile,
+      pyqFiles,
+      setSyllabusFile,
+      addPyqFiles,
+      removePyqFile,
+    ],
+  );
+
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
