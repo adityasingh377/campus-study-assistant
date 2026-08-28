@@ -37,20 +37,31 @@ export async function extractPdfText(file: File): Promise<ExtractedDoc> {
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
   const data = new Uint8Array(await file.arrayBuffer());
-  const doc = await pdfjs.getDocument({ data }).promise;
 
-  const pages: string[] = [];
-  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
-    const page = await doc.getPage(pageNumber);
-    const content = await page.getTextContent();
-    const text = content.items
-      .map((item) => ("str" in item ? item.str : ""))
-      .join(" ")
-      .replace(/[ \t]+/g, " ")
-      .trim();
-    pages.push(text);
+  try {
+    const doc = await pdfjs.getDocument({ data }).promise;
+
+    const pages: string[] = [];
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const text = content.items
+        .map((item) => ("str" in item ? item.str : ""))
+        .join(" ")
+        .replace(/[ \t]+/g, " ")
+        .trim();
+      pages.push(text);
+    }
+
+    const text = pages.join("\n\n").trim();
+    if (!text) {
+      throw new Error(
+        "No text found in this PDF (it may be a scan). Please try another PDF.",
+      );
+    }
+    return { name: file.name, text, pageCount: doc.numPages, charCount: text.length };
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("Please try another PDF")) throw err;
+    throw new Error("Couldn't read this PDF. Please try another PDF.");
   }
-
-  const text = pages.join("\n\n").trim();
-  return { name: file.name, text, pageCount: doc.numPages, charCount: text.length };
 }
