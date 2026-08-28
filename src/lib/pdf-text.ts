@@ -29,12 +29,15 @@ export async function extractPdfText(file: File): Promise<ExtractedDoc> {
   }
 
   // Dynamic import keeps pdf.js out of the SSR bundle.
-  const pdfjs = await import("pdfjs-dist");
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  // The legacy build is used because it is transpiled for broader browser
+  // support (the modern build relies on very recent JS features and throws
+  // "undefined is not a function" in Safari/older engines).
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const workerUrl = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
   const data = new Uint8Array(await file.arrayBuffer());
-  const doc = await pdfjs.getDocument({ data }).promise;
+  const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
 
   const pages: string[] = [];
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
