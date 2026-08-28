@@ -33,8 +33,19 @@ function formatSize(bytes: number) {
 }
 
 function UploadScreen() {
-  const { state, syllabusFile, pyqFiles, setSyllabusFile, addPyqFiles, removePyqFile } =
-    useSession();
+  const {
+    state,
+    syllabusFile,
+    pyqFiles,
+    setSyllabusFile,
+    addPyqFiles,
+    removePyqFile,
+    syllabusStatus,
+    syllabusError,
+    pyqStatus,
+    pyqError,
+    pyqTexts,
+  } = useSession();
   const navigate = useNavigate();
   const syllabusInput = useRef<HTMLInputElement>(null);
   const pyqInput = useRef<HTMLInputElement>(null);
@@ -123,6 +134,17 @@ function UploadScreen() {
                   </button>
                 </div>
               </div>
+              {syllabusStatus === "extracting" && (
+                <p className="label-mono text-muted-foreground mb-2">Extracting syllabus text…</p>
+              )}
+              {syllabusStatus === "done" && (
+                <p className="label-mono text-ember mb-2">Syllabus text extracted successfully.</p>
+              )}
+              {syllabusStatus === "error" && (
+                <p className="label-mono text-muted-foreground mb-2">
+                  {syllabusError ?? "Could not extract syllabus text."}
+                </p>
+              )}
               <p className="label-mono text-muted-foreground mb-2">{SUBJECT} — expected units</p>
               <ul className="space-y-2">
                 {SYLLABUS_UNITS.map((unit) => (
@@ -178,6 +200,17 @@ function UploadScreen() {
                   </button>
                 </div>
               ))}
+              {pyqStatus === "extracting" && (
+                <p className="label-mono text-muted-foreground">Extracting PYQ text…</p>
+              )}
+              {pyqStatus === "done" && pyqTexts.length > 0 && (
+                <p className="label-mono text-ember">PYQ text extracted successfully.</p>
+              )}
+              {pyqStatus === "error" && (
+                <p className="label-mono text-muted-foreground">
+                  {pyqError ?? "Could not extract PYQ text."}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => pyqInput.current?.click()}

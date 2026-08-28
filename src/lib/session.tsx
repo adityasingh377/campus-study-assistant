@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { TIME_OPTIONS, type Goal } from "./study-data";
 import { analyzeExam, type ExamStrategy } from "./analysis";
+import { extractPdfText, type ExtractedDoc, type ExtractionStatus } from "./pdf-text";
 
 export type FileMeta = { name: string; size: number; type: string };
 
@@ -37,6 +38,14 @@ type SessionContextValue = {
   setSyllabusFile: (file: File | null) => void;
   addPyqFiles: (files: File[]) => void;
   removePyqFile: (index: number) => void;
+  /** Raw text extracted from the syllabus PDF (in-memory only). */
+  syllabusText: ExtractedDoc | null;
+  syllabusStatus: ExtractionStatus;
+  syllabusError: string | null;
+  /** Raw text extracted from each PYQ PDF, aligned with pyqFiles order. */
+  pyqTexts: ExtractedDoc[];
+  pyqStatus: ExtractionStatus;
+  pyqError: string | null;
 };
 
 
@@ -52,6 +61,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SessionState>(DEFAULT_STATE);
   const [syllabusFile, setSyllabusFileState] = useState<File | null>(null);
   const [pyqFiles, setPyqFilesState] = useState<File[]>([]);
+  const [syllabusText, setSyllabusText] = useState<ExtractedDoc | null>(null);
+  const [syllabusStatus, setSyllabusStatus] = useState<ExtractionStatus>("idle");
+  const [syllabusError, setSyllabusError] = useState<string | null>(null);
+  const [pyqTexts, setPyqTexts] = useState<ExtractedDoc[]>([]);
+  const [pyqStatus, setPyqStatus] = useState<ExtractionStatus>("idle");
+  const [pyqError, setPyqError] = useState<string | null>(null);
 
 
   // Read persisted state after hydration to keep SSR output stable.
@@ -80,6 +95,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setState(DEFAULT_STATE);
     setSyllabusFileState(null);
     setPyqFilesState([]);
+    setSyllabusText(null);
+    setSyllabusStatus("idle");
+    setSyllabusError(null);
+    setPyqTexts([]);
+    setPyqStatus("idle");
+    setPyqError(null);
     try {
       window.sessionStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -91,6 +112,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (file: File | null) => {
       setSyllabusFileState(file);
       update({ syllabusMeta: file ? toMeta(file) : null });
+      setSyllabusError(null);
+      if (!file) {
+        setSyllabusText(null);
+        setSyllabusStatus("idle");
+        return;
+      }
+      setSyllabusText(null);
+      setSyllabusStatus("extracting");
+      extractPdfText(file)
+        .then((doc) => {
+          setSyllabusText(doc);
+          setSyllabusStatus("done");
+        })
+        .catch((err: unknown) => {
+          setSyllabusStatus("error");
+          setSyllabusError(err instanceof Error ? err.message : "Could not extract text.");
+        });
     },
     [update],
   );
@@ -98,8 +136,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const addPyqFiles = useCallback(
     (files: File[]) => {
       setPyqFilesState((prev) => {
-        const next = [...prev, ...files.filter((f) => !prev.some((p) => p.name === f.name))];
+        const added = files.filter((f) => !prev.some((p) => p.name === f.name));
+        const next = [...prev, ...added];
         update({ pyqMetas: next.map(toMeta) });
+        if (added.length) {
+          setPyqError(null);
+          setPyqStatus("extracting");
+          Promise.all(
+            added.map((file) =>
+              extractPdfText(file).catch((err: unknown) => {
+                setPyqError(err instanceof Error ? err.message : "Could not extract text.");
+                return null;
+              }),
+            ),
+          ).then((docs) => {
+            const ok = docs.filter((d): d is ExtractedDoc => d !== null);
+            setPyqTexts((prevDocs) => [...prevDocs, ...ok]);
+            setPyqStatus(ok.length === added.length ? "done" : "error");
+          });
+        }
         return next;
       });
     },
@@ -109,8 +164,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const removePyqFile = useCallback(
     (index: number) => {
       setPyqFilesState((prev) => {
+        const removed = prev[index];
         const next = prev.filter((_, i) => i !== index);
         update({ pyqMetas: next.map(toMeta) });
+        if (removed) setPyqTexts((docs) => docs.filter((d) => d.name !== removed.name));
+        if (next.length === 0) {
+          setPyqStatus("idle");
+          setPyqError(null);
+        }
         return next;
       });
     },
@@ -135,6 +196,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSyllabusFile,
       addPyqFiles,
       removePyqFile,
+      syllabusText,
+      syllabusStatus,
+      syllabusError,
+      pyqTexts,
+      pyqStatus,
+      pyqError,
     }),
     [
       state,
@@ -146,6 +213,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSyllabusFile,
       addPyqFiles,
       removePyqFile,
+      syllabusText,
+      syllabusStatus,
+      syllabusError,
+      pyqTexts,
+      pyqStatus,
+      pyqError,
     ],
   );
 
