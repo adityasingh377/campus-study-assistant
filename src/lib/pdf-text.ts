@@ -37,7 +37,7 @@ export async function extractPdfText(file: File): Promise<ExtractedDoc> {
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
   const data = new Uint8Array(await file.arrayBuffer());
-  const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
+  const doc = await pdfjs.getDocument({ data }).promise;
 
   const pages: string[] = [];
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
