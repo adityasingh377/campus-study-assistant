@@ -29,25 +29,39 @@ export async function extractPdfText(file: File): Promise<ExtractedDoc> {
   }
 
   // Dynamic import keeps pdf.js out of the SSR bundle.
-  const pdfjs = await import("pdfjs-dist");
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  // The legacy build is used because it is transpiled for broader browser
+  // support (the modern build relies on very recent JS features and throws
+  // "undefined is not a function" in Safari/older engines).
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const workerUrl = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
   const data = new Uint8Array(await file.arrayBuffer());
-  const doc = await pdfjs.getDocument({ data }).promise;
 
-  const pages: string[] = [];
-  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
-    const page = await doc.getPage(pageNumber);
-    const content = await page.getTextContent();
-    const text = content.items
-      .map((item) => ("str" in item ? item.str : ""))
-      .join(" ")
-      .replace(/[ \t]+/g, " ")
-      .trim();
-    pages.push(text);
+  try {
+    const doc = await pdfjs.getDocument({ data }).promise;
+
+    const pages: string[] = [];
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const text = content.items
+        .map((item) => ("str" in item ? item.str : ""))
+        .join(" ")
+        .replace(/[ \t]+/g, " ")
+        .trim();
+      pages.push(text);
+    }
+
+    const text = pages.join("\n\n").trim();
+    if (!text) {
+      throw new Error(
+        "No text found in this PDF (it may be a scan). Please try another PDF.",
+      );
+    }
+    return { name: file.name, text, pageCount: doc.numPages, charCount: text.length };
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("Please try another PDF")) throw err;
+    throw new Error("Couldn't read this PDF. Please try another PDF.");
   }
-
-  const text = pages.join("\n\n").trim();
-  return { name: file.name, text, pageCount: doc.numPages, charCount: text.length };
 }
