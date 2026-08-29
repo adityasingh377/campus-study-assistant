@@ -4,7 +4,6 @@ import { useRef } from "react";
 
 import { BackLink, Screen, StepLabel } from "@/components/app-chrome";
 import { useSession } from "@/lib/session";
-import { SUBJECT, SYLLABUS_UNITS } from "@/lib/study-data";
 
 const ACCEPT = "application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg";
 
@@ -40,6 +39,7 @@ function UploadScreen() {
     setSyllabusFile,
     addPyqFiles,
     removePyqFile,
+    syllabusText,
     syllabusStatus,
     syllabusError,
     pyqStatus,
