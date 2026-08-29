@@ -39,12 +39,6 @@ function UploadScreen() {
     setSyllabusFile,
     addPyqFiles,
     removePyqFile,
-    syllabusText,
-    syllabusStatus,
-    syllabusError,
-    pyqStatus,
-    pyqError,
-    pyqTexts,
   } = useSession();
   const navigate = useNavigate();
   const syllabusInput = useRef<HTMLInputElement>(null);
@@ -109,12 +103,13 @@ function UploadScreen() {
             </div>
           ) : (
             <div className="border-border bg-card shadow-card rounded-2xl border p-5">
-              <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-extrabold tracking-tight">{syllabusMeta.name}</p>
                   <p className="label-mono text-ember mt-1 font-bold">
-                    {formatSize(syllabusMeta.size)} · ready
+                    {formatSize(syllabusMeta.size)} · READY
                   </p>
+                  <p className="label-mono text-ember mt-1">File uploaded successfully</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2 pt-1">
                   <button
@@ -134,26 +129,6 @@ function UploadScreen() {
                   </button>
                 </div>
               </div>
-              {syllabusStatus === "extracting" && (
-                <p className="label-mono text-muted-foreground mb-2">Extracting syllabus text…</p>
-              )}
-              {syllabusStatus === "error" && (
-                <p className="label-mono text-ember mb-2">
-                  {syllabusError ?? "Couldn't read this PDF. Please try another PDF."}
-                </p>
-              )}
-              {syllabusStatus === "done" && syllabusText && (
-                <>
-                  <p className="label-mono text-ember mb-2">
-                    Extracted {syllabusText.pageCount} page
-                    {syllabusText.pageCount === 1 ? "" : "s"} · {syllabusText.charCount} characters
-                  </p>
-                  <p className="label-mono text-muted-foreground mb-2">From your syllabus</p>
-                  <p className="text-muted-foreground line-clamp-6 text-sm whitespace-pre-line">
-                    {syllabusText.text.slice(0, 600)}
-                  </p>
-                </>
-              )}
             </div>
           )}
         </section>
@@ -188,7 +163,10 @@ function UploadScreen() {
                   <Check className="text-ember size-4 shrink-0" aria-hidden />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold">{meta.name}</p>
-                    <p className="label-mono text-muted-foreground mt-1">{formatSize(meta.size)}</p>
+                    <p className="label-mono text-muted-foreground mt-1">
+                      {formatSize(meta.size)} · READY
+                    </p>
+                    <p className="label-mono text-ember mt-1">File uploaded successfully</p>
                   </div>
                   <button
                     type="button"
@@ -200,17 +178,6 @@ function UploadScreen() {
                   </button>
                 </div>
               ))}
-              {pyqStatus === "extracting" && (
-                <p className="label-mono text-muted-foreground">Extracting PYQ text…</p>
-              )}
-              {pyqStatus === "done" && pyqTexts.length > 0 && (
-                <p className="label-mono text-ember">PYQ text extracted successfully.</p>
-              )}
-              {pyqStatus === "error" && (
-                <p className="label-mono text-muted-foreground">
-                  {pyqError ?? "Could not extract PYQ text."}
-                </p>
-              )}
               <button
                 type="button"
                 onClick={() => pyqInput.current?.click()}
