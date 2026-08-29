@@ -137,23 +137,23 @@ function UploadScreen() {
               {syllabusStatus === "extracting" && (
                 <p className="label-mono text-muted-foreground mb-2">Extracting syllabus text…</p>
               )}
-              {syllabusStatus === "done" && (
-                <p className="label-mono text-ember mb-2">Syllabus text extracted successfully.</p>
-              )}
               {syllabusStatus === "error" && (
-                <p className="label-mono text-muted-foreground mb-2">
-                  {syllabusError ?? "Could not extract syllabus text."}
+                <p className="label-mono text-ember mb-2">
+                  {syllabusError ?? "Couldn't read this PDF. Please try another PDF."}
                 </p>
               )}
-              <p className="label-mono text-muted-foreground mb-2">{SUBJECT} — expected units</p>
-              <ul className="space-y-2">
-                {SYLLABUS_UNITS.map((unit) => (
-                  <li key={unit} className="flex items-center gap-3 text-sm">
-                    <Check className="text-ember size-4 shrink-0" aria-hidden />
-                    <span className="min-w-0 truncate">{unit}</span>
-                  </li>
-                ))}
-              </ul>
+              {syllabusStatus === "done" && syllabusText && (
+                <>
+                  <p className="label-mono text-ember mb-2">
+                    Extracted {syllabusText.pageCount} page
+                    {syllabusText.pageCount === 1 ? "" : "s"} · {syllabusText.charCount} characters
+                  </p>
+                  <p className="label-mono text-muted-foreground mb-2">From your syllabus</p>
+                  <p className="text-muted-foreground line-clamp-6 text-sm whitespace-pre-line">
+                    {syllabusText.text.slice(0, 600)}
+                  </p>
+                </>
+              )}
             </div>
           )}
         </section>
