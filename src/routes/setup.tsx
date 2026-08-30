@@ -102,16 +102,18 @@ function SetupScreen() {
             </label>
             <input
               id="custom-minutes"
-              type="number"
-              min={30}
-              max={4000}
-              step={15}
-              value={state.customMinutes}
-              onChange={(event) =>
-                update({ customMinutes: Math.max(30, Number(event.target.value) || 30) })
-              }
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={minutesText}
+              onChange={(event) => handleMinutesChange(event.target.value)}
               className="border-input mt-2 w-full rounded-lg border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
             />
+            {minutesError && (
+              <p role="alert" className="text-destructive mt-2 text-xs">
+                {minutesError}
+              </p>
+            )}
           </div>
         )}
       </section>
