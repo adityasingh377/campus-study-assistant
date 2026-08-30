@@ -158,7 +158,7 @@ function SetupScreen() {
       <div className="mt-12">
         <button
           type="button"
-          onClick={() => navigate({ to: "/analyzing" })}
+          onClick={handleBuildPlan}
           className="bg-ember text-ember-foreground w-full rounded-xl p-5 font-bold shadow-card transition-transform active:scale-95"
         >
           Build My Plan
