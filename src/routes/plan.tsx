@@ -45,7 +45,13 @@ function PlanScreen() {
               <p className="font-bold">{formatMinutes(strategy.totalMinutes)}</p>
             </div>
           </div>
-          <p className="text-muted-foreground mt-2 text-xs">Goal: {strategy.goalLabel}</p>
+          <p className="text-muted-foreground mt-2 text-xs">
+            Goal: {strategy.goalLabel} · Time: {strategy.timeLabel}
+          </p>
+          <p className="mt-3 text-sm leading-relaxed">{strategy.timeMessage}</p>
+          <p className="label-mono text-muted-foreground mt-4">
+            Demo data — topic rankings below are mock content, not yet analyzed from your uploads.
+          </p>
         </header>
 
         <div className="mb-4 flex items-center gap-2">

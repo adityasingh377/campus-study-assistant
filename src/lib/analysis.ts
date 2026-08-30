@@ -30,6 +30,8 @@ export type ExamStrategy = {
   goalLabel: string;
   timeLabel: string;
   totalMinutes: number;
+  /** Short mock message derived from the selected time budget. */
+  timeMessage: string;
   studyFirst: RankedTopic[];
   studyLater: RankedTopic[];
 };
@@ -55,6 +57,20 @@ function scoreTopic(topic: Topic, goal: Goal): number {
     return 0.5 + frequency * 0.5;
   }
   return frequency * 0.7 + weight * 0.3;
+}
+
+/** Mock rule: message tone depends only on the selected time budget. */
+function timeMessageFor(totalMinutes: number): string {
+  if (totalMinutes <= 180) {
+    return "Emergency plan — only the most important topics fit. Skip everything else.";
+  }
+  if (totalMinutes <= 420) {
+    return "Focused push — the highest-value topics plus a quick pass over the rest.";
+  }
+  if (totalMinutes <= 1080) {
+    return "Broader plan — enough time to cover most of the syllabus properly.";
+  }
+  return "Full runway — work through the syllabus systematically.";
 }
 
 function priorityFor(score: number, max: number): Priority {
@@ -125,6 +141,7 @@ export function analyzeExam(input: {
     goalLabel: GOAL_LABEL[goal],
     timeLabel,
     totalMinutes,
+    timeMessage: timeMessageFor(totalMinutes),
     studyFirst,
     studyLater,
   };
