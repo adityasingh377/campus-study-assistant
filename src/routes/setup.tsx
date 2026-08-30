@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { BackLink, Screen, StepLabel } from "@/components/app-chrome";
@@ -27,6 +28,38 @@ export const Route = createFileRoute("/setup")({
 function SetupScreen() {
   const { state, update } = useSession();
   const navigate = useNavigate();
+  // Raw text for the custom-minutes field so the user can clear/replace it freely.
+  const [minutesText, setMinutesText] = useState(() => String(state.customMinutes));
+  const [minutesError, setMinutesError] = useState<string | null>(null);
+
+  // Sync the text field when a different time option (or reset) changes the stored minutes.
+  useEffect(() => {
+    setMinutesText(String(state.customMinutes));
+    setMinutesError(null);
+  }, [state.customMinutes, state.timeId]);
+
+  const handleMinutesChange = (raw: string) => {
+    // Allow only digits while typing; empty stays empty (no forced default).
+    const cleaned = raw.replace(/[^0-9]/g, "");
+    setMinutesText(cleaned);
+    setMinutesError(null);
+    const parsed = Number(cleaned);
+    if (cleaned !== "" && Number.isInteger(parsed) && parsed > 0) {
+      update({ customMinutes: parsed });
+    }
+  };
+
+  const handleBuildPlan = () => {
+    if (state.timeId === "custom") {
+      const parsed = Number(minutesText);
+      if (minutesText === "" || !Number.isInteger(parsed) || parsed <= 0) {
+        setMinutesError("Enter a valid number of minutes (a positive whole number).");
+        return;
+      }
+      update({ customMinutes: parsed });
+    }
+    navigate({ to: "/analyzing" });
+  };
 
   return (
     <Screen>
