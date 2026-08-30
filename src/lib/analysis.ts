@@ -141,6 +141,7 @@ export function analyzeExam(input: {
     goalLabel: GOAL_LABEL[goal],
     timeLabel,
     totalMinutes,
+    timeMessage: timeMessageFor(totalMinutes),
     studyFirst,
     studyLater,
   };
