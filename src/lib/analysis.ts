@@ -30,6 +30,8 @@ export type ExamStrategy = {
   goalLabel: string;
   timeLabel: string;
   totalMinutes: number;
+  /** Short mock message derived from the selected time budget. */
+  timeMessage: string;
   studyFirst: RankedTopic[];
   studyLater: RankedTopic[];
 };
