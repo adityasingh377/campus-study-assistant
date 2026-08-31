@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from "react";
 
 import { TIME_OPTIONS, type Goal } from "./study-data";
-import { analyzeExam, type ExamStrategy } from "./analysis";
+import { analyzeExam, strategyFromAi, type ExamStrategy } from "./analysis";
+import { analyzeUploads, type AiStrategy } from "./exam-analysis.functions";
 import { extractPdfText, type ExtractedDoc, type ExtractionStatus } from "./pdf-text";
 
 export type FileMeta = { name: string; size: number; type: string };
@@ -27,6 +28,12 @@ const DEFAULT_STATE: SessionState = {
 
 const STORAGE_KEY = "csa-session-v1";
 
+const GOAL_LABELS: Record<Goal, string> = {
+  just_pass: "Just Pass",
+  score_well: "Score Well",
+  full_prep: "Full Preparation",
+};
+
 type SessionContextValue = {
   state: SessionState;
   update: (patch: Partial<SessionState>) => void;
@@ -46,7 +53,13 @@ type SessionContextValue = {
   pyqTexts: ExtractedDoc[];
   pyqStatus: ExtractionStatus;
   pyqError: string | null;
+  /** AI analysis of the uploaded documents. */
+  analysisStatus: AnalysisStatus;
+  analysisError: string | null;
+  runAnalysis: () => Promise<void>;
 };
+
+export type AnalysisStatus = "idle" | "running" | "done" | "error";
 
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -67,6 +80,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [pyqTexts, setPyqTexts] = useState<ExtractedDoc[]>([]);
   const [pyqStatus, setPyqStatus] = useState<ExtractionStatus>("idle");
   const [pyqError, setPyqError] = useState<string | null>(null);
+  const [aiStrategy, setAiStrategy] = useState<AiStrategy | null>(null);
+  const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>("idle");
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
 
   // Read persisted state after hydration to keep SSR output stable.
@@ -101,6 +117,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setPyqTexts([]);
     setPyqStatus("idle");
     setPyqError(null);
+    setAiStrategy(null);
+    setAnalysisStatus("idle");
+    setAnalysisError(null);
     try {
       window.sessionStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -178,12 +197,57 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
-  const strategy = useMemo(() => {
+  const timing = useMemo(() => {
     const option = TIME_OPTIONS.find((o) => o.id === state.timeId);
     const minutes = state.timeId === "custom" ? state.customMinutes : (option?.minutes ?? 180);
     const timeLabel = state.timeId === "custom" ? `${minutes} minutes` : (option?.label ?? "3 Hours");
-    return analyzeExam({ goal: state.goal, totalMinutes: minutes, timeLabel });
-  }, [state.timeId, state.customMinutes, state.goal]);
+    return { minutes, timeLabel };
+  }, [state.timeId, state.customMinutes]);
+
+  // Real AI analysis when it succeeded; the mock strategy is only a fallback.
+  const strategy = useMemo(() => {
+    if (aiStrategy) {
+      return strategyFromAi({
+        ai: aiStrategy,
+        goal: state.goal,
+        totalMinutes: timing.minutes,
+        timeLabel: timing.timeLabel,
+      });
+    }
+    return analyzeExam({ goal: state.goal, totalMinutes: timing.minutes, timeLabel: timing.timeLabel });
+  }, [aiStrategy, state.goal, timing]);
+
+  const runAnalysis = useCallback(async () => {
+    if (!syllabusText || pyqTexts.length === 0) {
+      setAnalysisStatus("error");
+      setAnalysisError(
+        "We couldn't read text from your uploads. Go back and upload text-based PDF files, then retry.",
+      );
+      return;
+    }
+    setAnalysisStatus("running");
+    setAnalysisError(null);
+    try {
+      const result = await analyzeUploads({
+        data: {
+          syllabusText: syllabusText.text,
+          pyqTexts: pyqTexts.map((d) => ({ name: d.name, text: d.text })),
+          totalMinutes: timing.minutes,
+          goal: state.goal,
+          goalLabel: GOAL_LABELS[state.goal],
+          timeLabel: timing.timeLabel,
+        },
+      });
+      setAiStrategy(result);
+      setAnalysisStatus("done");
+    } catch (err) {
+      setAiStrategy(null);
+      setAnalysisStatus("error");
+      setAnalysisError(
+        err instanceof Error ? err.message : "AI analysis failed. Please try again.",
+      );
+    }
+  }, [syllabusText, pyqTexts, timing, state.goal]);
 
   const value = useMemo(
     () => ({
@@ -202,6 +266,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       pyqTexts,
       pyqStatus,
       pyqError,
+      analysisStatus,
+      analysisError,
+      runAnalysis,
     }),
     [
       state,
@@ -219,6 +286,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       pyqTexts,
       pyqStatus,
       pyqError,
+      analysisStatus,
+      analysisError,
+      runAnalysis,
     ],
   );
 
