@@ -240,7 +240,7 @@ export function strategyFromAi(input: {
       priority: t.priority,
       score: ai.topics.length - index,
       reasons,
-      marksNote: t.marksNote || undefined,
+      ...(t.marksNote ? { marksNote: t.marksNote } : {}),
       whyFirst: t.whyFirst,
     };
   });
