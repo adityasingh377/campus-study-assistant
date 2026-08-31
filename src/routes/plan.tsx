@@ -1,9 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 
 import { BottomNav, PriorityTag, Screen, TimeChip } from "@/components/app-chrome";
-import { PRIORITY_LABEL, formatMinutes, type RankedTopic } from "@/lib/analysis";
+import { PRIORITY_LABEL, formatMinutes, type ExamStrategy, type RankedTopic } from "@/lib/analysis";
 import { useSession } from "@/lib/session";
-import { PYQ_YEARS } from "@/lib/study-data";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({
@@ -49,9 +48,11 @@ function PlanScreen() {
             Goal: {strategy.goalLabel} · Time: {strategy.timeLabel}
           </p>
           <p className="mt-3 text-sm leading-relaxed">{strategy.timeMessage}</p>
-          <p className="label-mono text-muted-foreground mt-4">
-            Demo data — topic rankings below are mock content, not yet analyzed from your uploads.
-          </p>
+          {strategy.isDemo && (
+            <p className="label-mono text-muted-foreground mt-4">
+              Demo data — analysis of your uploads is unavailable, so example topics are shown.
+            </p>
+          )}
         </header>
 
         <div className="mb-4 flex items-center gap-2">
@@ -64,7 +65,7 @@ function PlanScreen() {
 
         <div className="space-y-4">
           {strategy.studyFirst.map((item) => (
-            <PriorityCard key={item.topic.id} item={item} />
+            <PriorityCard key={item.topic.id} item={item} totalPapers={strategy.totalPapers} />
           ))}
         </div>
 
@@ -77,7 +78,7 @@ function PlanScreen() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{topic.name}</p>
                     <p className="label-mono text-muted-foreground mt-0.5">
-                      {topic.appearedIn} of {PYQ_YEARS} papers
+                      {topic.appearedIn} of {strategy.totalPapers} papers
                     </p>
                   </div>
                   <span className="label-mono text-muted-foreground shrink-0">
@@ -86,6 +87,27 @@ function PlanScreen() {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {strategy.schedule.length > 0 && (
+          <section className="mt-10">
+            <h2 className="label-mono text-muted-foreground mb-3 font-bold">Your study plan</h2>
+            <ol className="border-border divide-border divide-y rounded-2xl border">
+              {strategy.schedule.map((block) => (
+                <li key={`${block.startMinute}-${block.label}`} className="flex gap-4 px-4 py-3">
+                  <span className="label-mono text-ember w-20 shrink-0 pt-0.5 font-bold">
+                    {block.startMinute}–{block.endMinute}m
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{block.label}</p>
+                    <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+                      {block.detail}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </section>
         )}
 
@@ -109,7 +131,13 @@ function PlanScreen() {
   );
 }
 
-function PriorityCard({ item }: { item: RankedTopic }) {
+function PriorityCard({
+  item,
+  totalPapers,
+}: {
+  item: RankedTopic;
+  totalPapers: ExamStrategy["totalPapers"];
+}) {
   const { topic, priority } = item;
   return (
     <article className="border-border bg-card shadow-card rounded-2xl border p-5">
@@ -121,13 +149,21 @@ function PriorityCard({ item }: { item: RankedTopic }) {
         <TimeChip>{topic.estimatedMinutes}m</TimeChip>
       </div>
 
-      <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
+      <p className="text-muted-foreground mb-2 text-sm leading-relaxed">
         Appeared in{" "}
         <span className="text-foreground font-bold">
-          {topic.appearedIn} of {PYQ_YEARS}
+          {topic.appearedIn} of {totalPapers}
         </span>{" "}
-        uploaded papers. Estimated time: {topic.estimatedMinutes} min.
+        uploaded papers{item.marksNote ? ` · ${item.marksNote}` : ""}. Estimated time:{" "}
+        {topic.estimatedMinutes} min.
       </p>
+
+      {item.whyFirst && (
+        <p className="mb-4 text-sm leading-relaxed">
+          <span className="label-mono text-muted-foreground block font-bold">Why study this first</span>
+          {item.whyFirst}
+        </p>
+      )}
 
       <div className="flex gap-2">
         <Link
