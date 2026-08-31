@@ -22,6 +22,17 @@ export type RankedTopic = {
   priority: Priority;
   score: number;
   reasons: string[];
+  /** Marks/weight as printed in the uploaded papers (AI results only). */
+  marksNote?: string;
+  /** One-line justification for studying this first (AI results only). */
+  whyFirst?: string;
+};
+
+export type ScheduleBlock = {
+  label: string;
+  detail: string;
+  startMinute: number;
+  endMinute: number;
 };
 
 export type ExamStrategy = {
@@ -30,10 +41,16 @@ export type ExamStrategy = {
   goalLabel: string;
   timeLabel: string;
   totalMinutes: number;
-  /** Short mock message derived from the selected time budget. */
+  /** Short message derived from the selected time budget. */
   timeMessage: string;
   studyFirst: RankedTopic[];
   studyLater: RankedTopic[];
+  /** How many previous-year papers the counts refer to. */
+  totalPapers: number;
+  /** Time-boxed plan across the available minutes. */
+  schedule: ScheduleBlock[];
+  /** True when this is the fallback demo strategy, not analysis of real uploads. */
+  isDemo: boolean;
 };
 
 const GOAL_LABEL: Record<Goal, string> = {
