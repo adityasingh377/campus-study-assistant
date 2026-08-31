@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 
 import { Screen } from "@/components/app-chrome";
@@ -34,25 +34,70 @@ export const Route = createFileRoute("/analyzing")({
 
 function AnalyzingScreen() {
   const navigate = useNavigate();
-  const { strategy } = useSession();
+  const { analysisStatus, analysisError, runAnalysis } = useSession();
   const [done, setDone] = useState(0);
+  const started = useRef(false);
 
+  // Start the real AI analysis once.
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void runAnalysis();
+  }, [runAnalysis]);
+
+  // Progress ticks while the request is in flight.
+  useEffect(() => {
+    if (analysisStatus === "error") return;
     const timers: ReturnType<typeof setTimeout>[] = [];
     STEPS.forEach((_, index) => {
-      timers.push(setTimeout(() => setDone(index + 1), 420 * (index + 1)));
+      timers.push(setTimeout(() => setDone(index + 1), 900 * (index + 1)));
     });
-    timers.push(setTimeout(() => navigate({ to: "/plan" }), 420 * STEPS.length + 700));
     return () => timers.forEach(clearTimeout);
-  }, [navigate]);
+  }, [analysisStatus]);
+
+  useEffect(() => {
+    if (analysisStatus === "done") navigate({ to: "/plan" });
+  }, [analysisStatus, navigate]);
+
+  if (analysisStatus === "error") {
+    return (
+      <Screen className="justify-center">
+        <h1 className="text-2xl font-extrabold tracking-tight">Analysis failed</h1>
+        <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+          {analysisError ?? "Something went wrong while analyzing your documents."}
+        </p>
+        <p className="label-mono text-muted-foreground mt-4">
+          Your uploads, time and goal are still saved.
+        </p>
+        <div className="mt-8 space-y-3">
+          <button
+            type="button"
+            onClick={() => {
+              setDone(0);
+              void runAnalysis();
+            }}
+            className="bg-ember text-ember-foreground shadow-card w-full rounded-xl p-5 font-bold transition-transform active:scale-95"
+          >
+            Retry analysis
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/upload" })}
+            className="border-border w-full rounded-xl border p-4 text-sm font-bold"
+          >
+            Back to uploads
+          </button>
+        </div>
+      </Screen>
+    );
+  }
 
   return (
     <Screen className="justify-center">
       <div className="mb-10">
-        <p className="label-mono text-ember mb-3 font-bold">{strategy.subject}</p>
         <h1 className="text-3xl font-extrabold tracking-tight">Analyzing your exam...</h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Cross-referencing your syllabus with 7 years of question papers.
+          Reading your uploaded syllabus and previous-year papers.
         </p>
       </div>
 

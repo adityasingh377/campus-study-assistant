@@ -1,33 +1,10 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { BackLink, BottomNav, Screen } from "@/components/app-chrome";
 import { PRIORITY_LABEL } from "@/lib/analysis";
 import { useSession } from "@/lib/session";
-import { TOPICS } from "@/lib/study-data";
 
 export const Route = createFileRoute("/topic/$topicId")({
-  loader: ({ params }) => {
-    const topic = TOPICS.find((t) => t.id === params.topicId);
-    if (!topic) throw notFound();
-    return { topicName: topic.name };
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return {
-        meta: [{ title: "Topic unavailable — Campus Study Assistant" }, { name: "robots", content: "noindex" }],
-      };
-    }
-    const title = `Why study ${loaderData.topicName}? — Campus Study Assistant`;
-    const description = `The evidence behind recommending ${loaderData.topicName}: past-paper frequency, syllabus fit, question type and your exam goal.`;
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: `Why study ${loaderData.topicName}?` },
-        { property: "og:description", content: description },
-      ],
-    };
-  },
   component: WhyTopicScreen,
 });
 

@@ -1,37 +1,11 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { BackLink, BottomNav, Screen } from "@/components/app-chrome";
 import { useSession } from "@/lib/session";
-import { TOPICS } from "@/lib/study-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/study/$topicId")({
-  loader: ({ params }) => {
-    const topic = TOPICS.find((t) => t.id === params.topicId);
-    if (!topic) throw notFound();
-    return { topicName: topic.name, minutes: topic.estimatedMinutes };
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return {
-        meta: [
-          { title: "Session unavailable — Campus Study Assistant" },
-          { name: "robots", content: "noindex" },
-        ],
-      };
-    }
-    const title = `Study ${loaderData.topicName} — Campus Study Assistant`;
-    const description = `A focused ${loaderData.minutes}-minute session on ${loaderData.topicName}: the core idea, key concepts and one previous-year question.`;
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: `Study ${loaderData.topicName}` },
-        { property: "og:description", content: description },
-      ],
-    };
-  },
   component: StudyScreen,
 });
 
