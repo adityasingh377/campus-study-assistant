@@ -6,6 +6,23 @@ import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/study/$topicId")({
+  head: () => ({
+    meta: [
+      { title: "Study session — Campus Study Assistant" },
+      {
+        name: "description",
+        content:
+          "A focused session on your top-priority topic: concise explanation, key points, a previous-year question and an answer framework.",
+      },
+      { property: "og:title", content: "Your focused study session" },
+      {
+        property: "og:description",
+        content: "Explanation, key points, real past questions and an answer framework.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: StudyScreen,
 });
 

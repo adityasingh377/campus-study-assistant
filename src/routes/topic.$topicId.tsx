@@ -5,6 +5,23 @@ import { PRIORITY_LABEL } from "@/lib/analysis";
 import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/topic/$topicId")({
+  head: () => ({
+    meta: [
+      { title: "Why study this topic? — Campus Study Assistant" },
+      {
+        name: "description",
+        content:
+          "The evidence behind this recommendation: how often it appeared in your uploaded papers, its marks pattern and syllabus fit.",
+      },
+      { property: "og:title", content: "Why study this topic first?" },
+      {
+        property: "og:description",
+        content: "Past-paper frequency, marks weight and syllabus relevance behind the ranking.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: WhyTopicScreen,
 });
 
@@ -35,6 +52,7 @@ function WhyTopicScreen() {
 
         <section className="border-border bg-card shadow-card mb-8 rounded-2xl border p-5">
           <h2 className="label-mono text-muted-foreground mb-4 font-bold">Why we recommend it</h2>
+          {ranked.whyFirst && <p className="mb-4 text-sm leading-relaxed font-semibold">{ranked.whyFirst}</p>}
           <ul className="space-y-3">
             {ranked.reasons.map((reason) => (
               <li key={reason} className="flex gap-3 text-sm leading-relaxed">
@@ -52,6 +70,7 @@ function WhyTopicScreen() {
           <p className="text-2xl font-extrabold tracking-tight">{topic.estimatedMinutes} minutes</p>
         </section>
 
+        {topic.sequence.length > 0 && (
         <section className="mb-10">
           <h2 className="label-mono text-muted-foreground mb-4 font-bold">Study sequence</h2>
           <ol className="border-border divide-border divide-y rounded-2xl border">
@@ -66,6 +85,7 @@ function WhyTopicScreen() {
             ))}
           </ol>
         </section>
+        )}
 
         <Link
           to="/study/$topicId"
