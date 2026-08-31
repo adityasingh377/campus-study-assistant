@@ -161,7 +161,129 @@ export function analyzeExam(input: {
     timeMessage: timeMessageFor(totalMinutes),
     studyFirst,
     studyLater,
+    totalPapers: PYQ_YEARS,
+    schedule: demoSchedule(studyFirst, totalMinutes),
+    isDemo: true,
   };
+}
+
+/** Simple time-boxing for the demo fallback strategy. */
+function demoSchedule(studyFirst: RankedTopic[], totalMinutes: number): ScheduleBlock[] {
+  const blocks: ScheduleBlock[] = [];
+  let cursor = 0;
+  const reserve = Math.min(Math.round(totalMinutes * 0.3), 60);
+  for (const item of studyFirst) {
+    const end = Math.min(cursor + item.topic.estimatedMinutes, totalMinutes - reserve);
+    if (end <= cursor) break;
+    blocks.push({
+      label: item.topic.name,
+      detail: item.topic.summary,
+      startMinute: cursor,
+      endMinute: end,
+    });
+    cursor = end;
+  }
+  if (cursor < totalMinutes) {
+    const mid = Math.round(cursor + (totalMinutes - cursor) / 2);
+    blocks.push({
+      label: "PYQ practice",
+      detail: "Attempt past questions on the topics above.",
+      startMinute: cursor,
+      endMinute: mid,
+    });
+    blocks.push({
+      label: "Rapid revision",
+      detail: "Skim key concepts and answer frameworks.",
+      startMinute: mid,
+      endMinute: totalMinutes,
+    });
+  }
+  return blocks;
+}
+
+/** Convert the AI's analysis of the uploaded documents into the UI's strategy shape. */
+export function strategyFromAi(input: {
+  ai: AiStrategy;
+  goal: Goal;
+  totalMinutes: number;
+  timeLabel: string;
+}): ExamStrategy {
+  const { ai, goal, totalMinutes, timeLabel } = input;
+  const used = new Set<string>();
+
+  const ranked: RankedTopic[] = ai.topics.map((t, index) => {
+    let id = slugify(t.name) || `topic-${index + 1}`;
+    while (used.has(id)) id = `${id}-${index + 1}`;
+    used.add(id);
+
+    const topic: Topic = {
+      id,
+      name: t.name,
+      unit: t.unit,
+      appearedIn: t.appearedIn,
+      estimatedMinutes: Math.max(5, Math.round(t.estimatedMinutes)),
+      questionType: t.questionType,
+      summary: t.summary,
+      explanation: t.explanation,
+      keyConcepts: t.keyConcepts,
+      sequence: [],
+      practiceQuestion: t.practiceQuestion,
+      answerFramework: t.answerFramework,
+    };
+
+    const reasons = [...t.reasons];
+    if (t.marksNote) reasons.unshift(t.marksNote);
+
+    return {
+      topic,
+      priority: t.priority,
+      score: ai.topics.length - index,
+      reasons,
+      marksNote: t.marksNote || undefined,
+      whyFirst: t.whyFirst,
+    };
+  });
+
+  const studyFirst: RankedTopic[] = [];
+  const studyLater: RankedTopic[] = [];
+  let planned = 0;
+  const budget = Math.round(totalMinutes * 0.8);
+  for (const item of ranked) {
+    const highValue = item.priority === "very_high" || item.priority === "high";
+    if (highValue && (studyFirst.length === 0 || planned + item.topic.estimatedMinutes <= budget)) {
+      studyFirst.push(item);
+      planned += item.topic.estimatedMinutes;
+    } else {
+      studyLater.push(item);
+    }
+  }
+  if (studyFirst.length === 0 && ranked[0]) {
+    studyFirst.push(ranked[0]);
+    studyLater.shift();
+  }
+
+  return {
+    subject: ai.subject,
+    goal,
+    goalLabel: GOAL_LABEL[goal],
+    timeLabel,
+    totalMinutes,
+    timeMessage: ai.overview || timeMessageFor(totalMinutes),
+    studyFirst,
+    studyLater,
+    totalPapers: ai.totalPapers,
+    schedule:
+      ai.schedule.length > 0 ? [...ai.schedule].sort((a, b) => a.startMinute - b.startMinute) : demoSchedule(studyFirst, totalMinutes),
+    isDemo: false,
+  };
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 48);
 }
 
 export function formatMinutes(minutes: number): string {
