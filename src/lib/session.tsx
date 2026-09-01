@@ -85,15 +85,48 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
 
+  const TEXT_STORAGE_KEY = "csa-text-v1";
+
   // Read persisted state after hydration to keep SSR output stable.
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem(STORAGE_KEY);
       if (raw) setState({ ...DEFAULT_STATE, ...(JSON.parse(raw) as Partial<SessionState>) });
+      // Extracted text is persisted too: File objects cannot survive a reload,
+      // so without this the analysis step would lose the uploads' contents.
+      const rawText = window.sessionStorage.getItem(TEXT_STORAGE_KEY);
+      if (rawText) {
+        const parsed = JSON.parse(rawText) as {
+          syllabusText: ExtractedDoc | null;
+          pyqTexts: ExtractedDoc[];
+        };
+        if (parsed.syllabusText) {
+          setSyllabusText(parsed.syllabusText);
+          setSyllabusStatus("done");
+        }
+        if (parsed.pyqTexts?.length) {
+          setPyqTexts(parsed.pyqTexts);
+          setPyqStatus("done");
+        }
+      }
     } catch {
       /* ignore */
     }
   }, []);
+
+  // Keep extracted text in sessionStorage so it survives reloads/navigation.
+  useEffect(() => {
+    try {
+      if (!syllabusText && pyqTexts.length === 0) {
+        window.sessionStorage.removeItem(TEXT_STORAGE_KEY);
+        return;
+      }
+      window.sessionStorage.setItem(TEXT_STORAGE_KEY, JSON.stringify({ syllabusText, pyqTexts }));
+    } catch {
+      /* ignore quota errors — in-memory state still works for this session */
+    }
+  }, [syllabusText, pyqTexts]);
+
 
   const update = useCallback((patch: Partial<SessionState>) => {
     setState((prev) => {
