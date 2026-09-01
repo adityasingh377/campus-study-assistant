@@ -27,6 +27,7 @@ const DEFAULT_STATE: SessionState = {
 };
 
 const STORAGE_KEY = "csa-session-v1";
+const TEXT_STORAGE_KEY = "csa-text-v1";
 
 const GOAL_LABELS: Record<Goal, string> = {
   just_pass: "Just Pass",
@@ -84,8 +85,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>("idle");
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
-
-  const TEXT_STORAGE_KEY = "csa-text-v1";
 
   // Read persisted state after hydration to keep SSR output stable.
   useEffect(() => {
