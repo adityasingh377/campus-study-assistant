@@ -27,6 +27,7 @@ const DEFAULT_STATE: SessionState = {
 };
 
 const STORAGE_KEY = "csa-session-v1";
+const TEXT_STORAGE_KEY = "csa-text-v1";
 
 const GOAL_LABELS: Record<Goal, string> = {
   just_pass: "Just Pass",
@@ -90,10 +91,41 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       const raw = window.sessionStorage.getItem(STORAGE_KEY);
       if (raw) setState({ ...DEFAULT_STATE, ...(JSON.parse(raw) as Partial<SessionState>) });
+      // Extracted text is persisted too: File objects cannot survive a reload,
+      // so without this the analysis step would lose the uploads' contents.
+      const rawText = window.sessionStorage.getItem(TEXT_STORAGE_KEY);
+      if (rawText) {
+        const parsed = JSON.parse(rawText) as {
+          syllabusText: ExtractedDoc | null;
+          pyqTexts: ExtractedDoc[];
+        };
+        if (parsed.syllabusText) {
+          setSyllabusText(parsed.syllabusText);
+          setSyllabusStatus("done");
+        }
+        if (parsed.pyqTexts?.length) {
+          setPyqTexts(parsed.pyqTexts);
+          setPyqStatus("done");
+        }
+      }
     } catch {
       /* ignore */
     }
   }, []);
+
+  // Keep extracted text in sessionStorage so it survives reloads/navigation.
+  useEffect(() => {
+    try {
+      if (!syllabusText && pyqTexts.length === 0) {
+        window.sessionStorage.removeItem(TEXT_STORAGE_KEY);
+        return;
+      }
+      window.sessionStorage.setItem(TEXT_STORAGE_KEY, JSON.stringify({ syllabusText, pyqTexts }));
+    } catch {
+      /* ignore quota errors — in-memory state still works for this session */
+    }
+  }, [syllabusText, pyqTexts]);
+
 
   const update = useCallback((patch: Partial<SessionState>) => {
     setState((prev) => {
@@ -152,50 +184,51 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [update],
   );
 
+  // Side effects (PDF extraction) run outside the state updater so React's
+  // double-invoked updaters in dev can never drop or duplicate an extraction.
   const addPyqFiles = useCallback(
     (files: File[]) => {
-      setPyqFilesState((prev) => {
-        const added = files.filter((f) => !prev.some((p) => p.name === f.name));
-        const next = [...prev, ...added];
-        update({ pyqMetas: next.map(toMeta) });
-        if (added.length) {
-          setPyqError(null);
-          setPyqStatus("extracting");
-          Promise.all(
-            added.map((file) =>
-              extractPdfText(file).catch((err: unknown) => {
-                setPyqError(err instanceof Error ? err.message : "Could not extract text.");
-                return null;
-              }),
-            ),
-          ).then((docs) => {
-            const ok = docs.filter((d): d is ExtractedDoc => d !== null);
-            setPyqTexts((prevDocs) => [...prevDocs, ...ok]);
-            setPyqStatus(ok.length === added.length ? "done" : "error");
-          });
-        }
-        return next;
+      const added = files.filter((f) => !pyqFiles.some((p) => p.name === f.name));
+      if (added.length === 0) return;
+      const next = [...pyqFiles, ...added];
+      setPyqFilesState(next);
+      update({ pyqMetas: next.map(toMeta) });
+      setPyqError(null);
+      setPyqStatus("extracting");
+      void Promise.all(
+        added.map((file) =>
+          extractPdfText(file).catch((err: unknown) => {
+            setPyqError(err instanceof Error ? err.message : "Could not extract text.");
+            return null;
+          }),
+        ),
+      ).then((docs) => {
+        const ok = docs.filter((d): d is ExtractedDoc => d !== null);
+        setPyqTexts((prevDocs) => [
+          ...prevDocs.filter((d) => !ok.some((o) => o.name === d.name)),
+          ...ok,
+        ]);
+        setPyqStatus(ok.length === added.length ? "done" : "error");
       });
     },
-    [update],
+    [pyqFiles, update],
   );
 
   const removePyqFile = useCallback(
     (index: number) => {
-      setPyqFilesState((prev) => {
-        const removed = prev[index];
-        const next = prev.filter((_, i) => i !== index);
-        update({ pyqMetas: next.map(toMeta) });
-        if (removed) setPyqTexts((docs) => docs.filter((d) => d.name !== removed.name));
-        if (next.length === 0) {
-          setPyqStatus("idle");
-          setPyqError(null);
-        }
-        return next;
-      });
+      const removed = pyqFiles[index];
+      const next = pyqFiles.filter((_, i) => i !== index);
+      setPyqFilesState(next);
+      update({ pyqMetas: next.map(toMeta) });
+      if (removed) setPyqTexts((docs) => docs.filter((d) => d.name !== removed.name));
+      if (next.length === 0) {
+        setPyqStatus("idle");
+        setPyqError(null);
+      }
     },
-    [update],
+    [pyqFiles, update],
   );
+
 
   const timing = useMemo(() => {
     const option = TIME_OPTIONS.find((o) => o.id === state.timeId);
