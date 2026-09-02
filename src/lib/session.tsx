@@ -251,20 +251,42 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [aiStrategy, state.goal, timing]);
 
   const runAnalysis = useCallback(async () => {
-    if (!syllabusText || pyqTexts.length === 0) {
-      setAnalysisStatus("error");
-      setAnalysisError(
-        "We couldn't read text from your uploads. Go back and upload text-based PDF files, then retry.",
-      );
-      return;
-    }
     setAnalysisStatus("running");
     setAnalysisError(null);
     try {
+      // Extraction may still be in flight, or may never have run (e.g. text was
+      // dropped). Re-extract on demand from the in-memory File objects so the AI
+      // always receives the real uploaded content.
+      let syllabus = syllabusText;
+      if (!syllabus && syllabusFile) {
+        syllabus = await extractPdfText(syllabusFile);
+        setSyllabusText(syllabus);
+        setSyllabusStatus("done");
+      }
+      let pyqs = pyqTexts;
+      const missing = pyqFiles.filter((f) => !pyqs.some((d) => d.name === f.name));
+      if (missing.length) {
+        const extracted = await Promise.all(missing.map((file) => extractPdfText(file)));
+        pyqs = [...pyqs, ...extracted];
+        setPyqTexts(pyqs);
+        setPyqStatus("done");
+      }
+
+      if (!syllabus) {
+        throw new Error(
+          "No syllabus text is available. Go back to uploads and re-select your syllabus PDF, then retry.",
+        );
+      }
+      if (pyqs.length === 0) {
+        throw new Error(
+          "No previous-year paper text is available. Go back to uploads and re-select your PYQ PDFs, then retry.",
+        );
+      }
+
       const result = await analyzeUploads({
         data: {
-          syllabusText: syllabusText.text,
-          pyqTexts: pyqTexts.map((d) => ({ name: d.name, text: d.text })),
+          syllabusText: syllabus.text,
+          pyqTexts: pyqs.map((d) => ({ name: d.name, text: d.text })),
           totalMinutes: timing.minutes,
           goal: state.goal,
           goalLabel: GOAL_LABELS[state.goal],
@@ -280,7 +302,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         err instanceof Error ? err.message : "AI analysis failed. Please try again.",
       );
     }
-  }, [syllabusText, pyqTexts, timing, state.goal]);
+  }, [syllabusText, syllabusFile, pyqTexts, pyqFiles, timing, state.goal]);
+
 
   const value = useMemo(
     () => ({
