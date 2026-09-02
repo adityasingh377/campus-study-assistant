@@ -39,6 +39,12 @@ function UploadScreen() {
     setSyllabusFile,
     addPyqFiles,
     removePyqFile,
+    syllabusStatus,
+    syllabusError,
+    pyqStatus,
+    pyqError,
+    syllabusText,
+    pyqTexts,
   } = useSession();
   const navigate = useNavigate();
   const syllabusInput = useRef<HTMLInputElement>(null);
@@ -46,7 +52,10 @@ function UploadScreen() {
 
   const syllabusMeta = state.syllabusMeta;
   const pyqMetas = state.pyqMetas;
-  const canContinue = Boolean(syllabusFile) && pyqFiles.length > 0;
+    // Accept extracted text as well as live File objects, so a page reload (which
+  // drops File objects but keeps the extracted text) does not block the flow.
+  const canContinue =
+    Boolean(syllabusFile || syllabusText) && (pyqFiles.length > 0 || pyqTexts.length > 0);
 
   return (
     <Screen>
@@ -109,7 +118,12 @@ function UploadScreen() {
                   <p className="label-mono text-ember mt-1 font-bold">
                     {formatSize(syllabusMeta.size)} · READY
                   </p>
-                  <p className="label-mono text-ember mt-1">File uploaded successfully</p>
+                  {syllabusStatus === "error" ? (
+                    <p className="label-mono text-destructive mt-1">{syllabusError}</p>
+                  ) : (
+                    <p className="label-mono text-ember mt-1">File uploaded successfully</p>
+                  )}
+
                 </div>
                 <div className="flex shrink-0 items-center gap-2 pt-1">
                   <button
@@ -166,7 +180,12 @@ function UploadScreen() {
                     <p className="label-mono text-muted-foreground mt-1">
                       {formatSize(meta.size)} · READY
                     </p>
-                    <p className="label-mono text-ember mt-1">File uploaded successfully</p>
+                    {pyqStatus === "error" ? (
+                      <p className="label-mono text-destructive mt-1">{pyqError}</p>
+                    ) : (
+                      <p className="label-mono text-ember mt-1">File uploaded successfully</p>
+                    )}
+
                   </div>
                   <button
                     type="button"
