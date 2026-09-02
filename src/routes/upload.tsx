@@ -39,6 +39,10 @@ function UploadScreen() {
     setSyllabusFile,
     addPyqFiles,
     removePyqFile,
+    syllabusStatus,
+    syllabusError,
+    pyqStatus,
+    pyqError,
   } = useSession();
   const navigate = useNavigate();
   const syllabusInput = useRef<HTMLInputElement>(null);
@@ -109,7 +113,15 @@ function UploadScreen() {
                   <p className="label-mono text-ember mt-1 font-bold">
                     {formatSize(syllabusMeta.size)} · READY
                   </p>
-                  <p className="label-mono text-ember mt-1">File uploaded successfully</p>
+                  {syllabusStatus === "error" ? (
+                    <p className="label-mono text-destructive mt-1">{syllabusError}</p>
+                  ) : (
+                    {pyqStatus === "error" ? (
+                      <p className="label-mono text-destructive mt-1">{pyqError}</p>
+                    ) : (
+                      <p className="label-mono text-ember mt-1">File uploaded successfully</p>
+                    )}
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2 pt-1">
                   <button
@@ -166,7 +178,15 @@ function UploadScreen() {
                     <p className="label-mono text-muted-foreground mt-1">
                       {formatSize(meta.size)} · READY
                     </p>
-                    <p className="label-mono text-ember mt-1">File uploaded successfully</p>
+                    {syllabusStatus === "error" ? (
+                    <p className="label-mono text-destructive mt-1">{syllabusError}</p>
+                  ) : (
+                    {pyqStatus === "error" ? (
+                      <p className="label-mono text-destructive mt-1">{pyqError}</p>
+                    ) : (
+                      <p className="label-mono text-ember mt-1">File uploaded successfully</p>
+                    )}
+                  )}
                   </div>
                   <button
                     type="button"
