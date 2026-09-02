@@ -175,15 +175,12 @@ function UploadScreen() {
                     <p className="label-mono text-muted-foreground mt-1">
                       {formatSize(meta.size)} · READY
                     </p>
-                    {syllabusStatus === "error" ? (
-                    <p className="label-mono text-destructive mt-1">{syllabusError}</p>
-                  ) : (
                     {pyqStatus === "error" ? (
                       <p className="label-mono text-destructive mt-1">{pyqError}</p>
                     ) : (
                       <p className="label-mono text-ember mt-1">File uploaded successfully</p>
                     )}
-                  )}
+
                   </div>
                   <button
                     type="button"
