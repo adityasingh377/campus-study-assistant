@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { BackLink, BottomNav, Screen } from "@/components/app-chrome";
 import { useSession } from "@/lib/session";
+import { askTopicQuestion } from "@/lib/topic-chat.functions";
+import type { RankedTopic } from "@/lib/analysis";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/study/$topicId")({
