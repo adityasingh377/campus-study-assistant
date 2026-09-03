@@ -139,3 +139,154 @@ function StudyScreen() {
     </>
   );
 }
+
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
+const QUICK_PROMPTS = [
+  "Explain in detail",
+  "Give me a 15-mark answer",
+  "Make it easier",
+  "Give examples",
+  "Explain in Hindi",
+];
+
+function TopicChat({ ranked }: { ranked: RankedTopic }) {
+  const { strategy, syllabusText, pyqTexts } = useSession();
+  const { topic } = ranked;
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const endRef = useRef<HTMLDivElement | null>(null);
+
+  // Conversation is per-topic: reset when the student opens a different topic.
+  useEffect(() => {
+    setMessages([]);
+    setInput("");
+    setError(null);
+  }, [topic.id]);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages.length, loading]);
+
+  const send = async (raw: string) => {
+    const question = raw.trim();
+    if (!question) {
+      setError("Type a question first — for example “Give me a 15-mark answer”.");
+      return;
+    }
+    if (loading) return;
+
+    const next: ChatMessage[] = [...messages, { role: "user", content: question }];
+    setMessages(next);
+    setInput("");
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await askTopicQuestion({
+        data: {
+          topic: {
+            name: topic.name,
+            unit: topic.unit,
+            summary: topic.summary,
+            explanation: topic.explanation,
+            keyConcepts: topic.keyConcepts,
+            practiceQuestion: topic.practiceQuestion,
+            estimatedMinutes: topic.estimatedMinutes,
+          },
+          syllabusText: syllabusText?.text ?? "",
+          pyqText: pyqTexts.map((d) => `--- ${d.name} ---\n${d.text}`).join("\n\n"),
+          goalLabel: strategy.goalLabel,
+          timeLabel: strategy.timeLabel,
+          messages: next.slice(-12),
+        },
+      });
+      setMessages([...next, { role: "assistant", content: result.content }]);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "The tutor is unavailable right now. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section>
+      <h2 className="label-mono text-ember mb-3 font-bold">Ask a follow-up</h2>
+      {!syllabusText && pyqTexts.length === 0 && (
+        <p className="text-muted-foreground mb-3 text-xs">
+          Your uploaded documents aren’t loaded in this session, so answers use this topic only.
+        </p>
+      )}
+
+      <div className="mb-3 flex flex-wrap gap-2">
+        {QUICK_PROMPTS.map((prompt) => (
+          <button
+            key={prompt}
+            type="button"
+            disabled={loading}
+            onClick={() => void send(prompt)}
+            className="border-border bg-card rounded-full border px-3 py-2 text-xs font-medium disabled:opacity-50"
+          >
+            {prompt}
+          </button>
+        ))}
+      </div>
+
+      {messages.length > 0 && (
+        <div className="mb-3 space-y-3">
+          {messages.map((message, index) => (
+            <div
+              key={`${message.role}-${index}`}
+              className={cn(
+                "rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
+                message.role === "user"
+                  ? "bg-muted ml-6 font-medium"
+                  : "border-border bg-card border",
+              )}
+            >
+              {message.content}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {loading && (
+        <p className="label-mono text-muted-foreground mb-3">Thinking…</p>
+      )}
+      {error && (
+        <p className="text-ember mb-3 text-xs font-medium" role="alert">
+          {error}
+        </p>
+      )}
+      <div ref={endRef} />
+
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void send(input);
+        }}
+        className="flex items-center gap-2"
+      >
+        <input
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          placeholder="Ask about this topic…"
+          aria-label="Ask about this topic"
+          className="border-border bg-card min-w-0 flex-1 rounded-xl border px-4 py-3 text-sm outline-none"
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-foreground text-background rounded-xl px-4 py-3 text-sm font-bold disabled:opacity-50"
+        >
+          Ask
+        </button>
+      </form>
+    </section>
+  );
+}
