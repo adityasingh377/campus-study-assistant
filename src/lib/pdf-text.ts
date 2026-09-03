@@ -44,12 +44,21 @@ export async function extractPdfText(file: File): Promise<ExtractedDoc> {
     const pages: string[] = [];
     for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
       const page = await doc.getPage(pageNumber);
-      const content = await page.getTextContent();
-      const text = content.items
-        .map((item) => ("str" in item ? item.str : ""))
-        .join(" ")
-        .replace(/[ \t]+/g, " ")
-        .trim();
+      // NOTE: page.getTextContent() internally does `for await (... of stream)`,
+      // which needs ReadableStream async iteration — missing in iPad/WebKit.
+      // Consuming the same stream with getReader() is supported everywhere.
+      const reader = page.streamTextContent().getReader();
+      const parts: string[] = [];
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        for (const item of value?.items ?? []) {
+          if (item && typeof item === "object" && "str" in item) {
+            parts.push(String((item as { str: string }).str));
+          }
+        }
+      }
+      const text = parts.join(" ").replace(/[ \t]+/g, " ").trim();
       pages.push(text);
     }
 
@@ -62,6 +71,8 @@ export async function extractPdfText(file: File): Promise<ExtractedDoc> {
     return { name: file.name, text, pageCount: doc.numPages, charCount: text.length };
   } catch (err) {
     if (err instanceof Error && err.message.includes("Please try another PDF")) throw err;
-    throw new Error("Couldn't read this PDF. Please try another PDF.");
+    console.error("PDF extraction failed:", err);
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(`Couldn't read this PDF (${detail}). Please try another PDF.`);
   }
 }
