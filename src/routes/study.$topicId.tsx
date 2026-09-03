@@ -112,6 +112,8 @@ function StudyScreen() {
               </button>
             )}
           </section>
+
+          <TopicChat ranked={ranked} />
         </div>
 
         <div className="mt-10 flex items-center gap-3">
