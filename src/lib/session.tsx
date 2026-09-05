@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { TIME_OPTIONS, type Goal } from "./study-data";
@@ -84,6 +84,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [aiStrategy, setAiStrategy] = useState<AiStrategy | null>(null);
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>("idle");
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  /** Fingerprint of the uploads + time + goal the cached analysis belongs to. */
+  const analysisKey = useRef<string | null>(null);
 
 
   // Read persisted state after hydration to keep SSR output stable.
@@ -251,6 +253,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [aiStrategy, state.goal, timing]);
 
   const runAnalysis = useCallback(async () => {
+    // Cache: the same uploads + time + goal never trigger a second AI call
+    // (going back to the plan, or re-entering the flow, is instant).
+    const key = [
+      state.timeId,
+      state.customMinutes,
+      state.goal,
+      syllabusText?.name ?? syllabusFile?.name ?? "",
+      syllabusText?.charCount ?? 0,
+      pyqTexts.map((d) => `${d.name}:${d.charCount}`).join("|") ||
+        pyqFiles.map((f) => f.name).join("|"),
+    ].join("~");
+    if (aiStrategy && analysisKey.current === key) {
+      setAnalysisStatus("done");
+      return;
+    }
+
     setAnalysisStatus("running");
     setAnalysisError(null);
     try {

@@ -8,6 +8,7 @@
 
 import { PYQ_YEARS, SUBJECT, TOPICS, type Goal, type Topic } from "./study-data";
 import type { AiStrategy } from "./exam-analysis.functions";
+import { timeProfileFor, type TimeProfile } from "./time-profile";
 
 export type Priority = "very_high" | "high" | "medium" | "low";
 
@@ -210,6 +211,7 @@ export function strategyFromAi(input: {
   timeLabel: string;
 }): ExamStrategy {
   const { ai, goal, totalMinutes, timeLabel } = input;
+  const profile = timeProfileFor(totalMinutes);
   const used = new Set<string>();
 
   const ranked: RankedTopic[] = ai.topics.map((t, index) => {
@@ -225,11 +227,12 @@ export function strategyFromAi(input: {
       estimatedMinutes: Math.max(5, Math.round(t.estimatedMinutes)),
       questionType: t.questionType,
       summary: t.summary,
-      explanation: t.explanation,
-      keyConcepts: t.keyConcepts,
+      // Long study material is generated on demand on the study screen.
+      explanation: "",
+      keyConcepts: [],
       sequence: [],
-      practiceQuestion: t.practiceQuestion,
-      answerFramework: t.answerFramework,
+      practiceQuestion: "",
+      answerFramework: [],
     };
 
     const reasons = [...t.reasons];
@@ -245,22 +248,20 @@ export function strategyFromAi(input: {
     };
   });
 
-  const studyFirst: RankedTopic[] = [];
-  const studyLater: RankedTopic[] = [];
-  let planned = 0;
-  const budget = Math.round(totalMinutes * 0.8);
-  for (const item of ranked) {
-    const highValue = item.priority === "very_high" || item.priority === "high";
-    if (highValue && (studyFirst.length === 0 || planned + item.topic.estimatedMinutes <= budget)) {
-      studyFirst.push(item);
-      planned += item.topic.estimatedMinutes;
-    } else {
-      studyLater.push(item);
+  // The time profile decides how many topics are actually planned for, so a
+  // 3-hour plan is a short top-value list and a 1-week plan is broad.
+  const count = Math.max(1, Math.min(profile.maxTopics, ranked.length));
+  const studyFirst = ranked.slice(0, count);
+  const studyLater = ranked.slice(count);
+
+  // Scale the per-topic minutes so they always fit the learning budget for
+  // this time band (never longer, and never a token 5 minutes for a week).
+  const rawTotal = studyFirst.reduce((sum, item) => sum + item.topic.estimatedMinutes, 0) || 1;
+  const factor = profile.studyMinutes / rawTotal;
+  if (factor < 0.95 || factor > 1.15) {
+    for (const item of studyFirst) {
+      item.topic.estimatedMinutes = Math.max(10, Math.round((item.topic.estimatedMinutes * factor) / 5) * 5);
     }
-  }
-  if (studyFirst.length === 0 && ranked[0]) {
-    studyFirst.push(ranked[0]);
-    studyLater.shift();
   }
 
   return {
@@ -269,15 +270,80 @@ export function strategyFromAi(input: {
     goalLabel: GOAL_LABEL[goal],
     timeLabel,
     totalMinutes,
-    timeMessage: ai.overview || timeMessageFor(totalMinutes),
+    timeMessage: ai.overview || profile.message,
     studyFirst,
     studyLater,
     totalPapers: ai.totalPapers,
-    schedule:
-      ai.schedule.length > 0 ? [...ai.schedule].sort((a, b) => a.startMinute - b.startMinute) : demoSchedule(studyFirst, totalMinutes),
+    schedule: buildSchedule(studyFirst, profile, ai.schedule),
     isDemo: false,
   };
 }
+
+/**
+ * Build the timeline from the time profile so practice and revision minutes are
+ * always reserved. AI schedule details are reused as block descriptions.
+ */
+function buildSchedule(
+  studyFirst: RankedTopic[],
+  profile: TimeProfile,
+  aiSchedule: AiStrategy["schedule"],
+): ScheduleBlock[] {
+  const blocks: ScheduleBlock[] = [];
+  const detailFor = (name: string) =>
+    aiSchedule.find((b) => b.label.toLowerCase().includes(name.toLowerCase()))?.detail;
+
+  const learn = Math.min(
+    profile.studyMinutes,
+    studyFirst.reduce((sum, item) => sum + item.topic.estimatedMinutes, 0),
+  );
+  let cursor = 0;
+  for (const item of studyFirst) {
+    const end = Math.min(cursor + item.topic.estimatedMinutes, learn);
+    if (end <= cursor) break;
+    blocks.push({
+      label: item.topic.name,
+      detail: detailFor(item.topic.name) ?? item.whyFirst ?? item.topic.summary,
+      startMinute: cursor,
+      endMinute: end,
+    });
+    cursor = end;
+  }
+
+  const remaining = profile.totalMinutes - cursor;
+  if (remaining > 0) {
+    const practice = Math.max(
+      5,
+      Math.round(
+        (remaining * profile.practiceMinutes) /
+          Math.max(1, profile.practiceMinutes + profile.revisionMinutes),
+      ),
+    );
+    const practiceEnd = Math.min(profile.totalMinutes, cursor + practice);
+    blocks.push({
+      label: "Previous-year question practice",
+      detail:
+        detailFor("practice") ??
+        "Write full answers to past questions on the topics above, timed.",
+      startMinute: cursor,
+      endMinute: practiceEnd,
+    });
+    if (practiceEnd < profile.totalMinutes) {
+      blocks.push({
+        label: profile.band === "systematic" ? "Revision passes" : "Rapid revision",
+        detail:
+          detailFor("revis") ??
+          (profile.band === "systematic"
+            ? "Two passes: key concepts first, then answer frameworks unit by unit."
+            : "Skim key concepts and answer frameworks for each topic above."),
+        startMinute: practiceEnd,
+        endMinute: profile.totalMinutes,
+      });
+    }
+  }
+
+  return blocks;
+}
+
 
 function slugify(value: string): string {
   return value
