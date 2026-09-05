@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { TIME_OPTIONS, type Goal } from "./study-data";
@@ -84,6 +84,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [aiStrategy, setAiStrategy] = useState<AiStrategy | null>(null);
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>("idle");
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  /** Fingerprint of the uploads + time + goal the cached analysis belongs to. */
+  const analysisKey = useRef<string | null>(null);
 
 
   // Read persisted state after hydration to keep SSR output stable.
