@@ -251,6 +251,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [aiStrategy, state.goal, timing]);
 
   const runAnalysis = useCallback(async () => {
+    // Cache: the same uploads + time + goal never trigger a second AI call
+    // (going back to the plan, or re-entering the flow, is instant).
+    const key = [
+      state.timeId,
+      state.customMinutes,
+      state.goal,
+      syllabusText?.name ?? syllabusFile?.name ?? "",
+      syllabusText?.charCount ?? 0,
+      pyqTexts.map((d) => `${d.name}:${d.charCount}`).join("|") ||
+        pyqFiles.map((f) => f.name).join("|"),
+    ].join("~");
+    if (aiStrategy && analysisKey.current === key) {
+      setAnalysisStatus("done");
+      return;
+    }
+
     setAnalysisStatus("running");
     setAnalysisError(null);
     try {
