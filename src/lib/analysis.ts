@@ -8,6 +8,7 @@
 
 import { PYQ_YEARS, SUBJECT, TOPICS, type Goal, type Topic } from "./study-data";
 import type { AiStrategy } from "./exam-analysis.functions";
+import { timeProfileFor, type TimeProfile } from "./time-profile";
 
 export type Priority = "very_high" | "high" | "medium" | "low";
 
