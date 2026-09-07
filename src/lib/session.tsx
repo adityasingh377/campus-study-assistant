@@ -152,6 +152,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setPyqStatus("idle");
     setPyqError(null);
     setAiStrategy(null);
+    analysisKey.current = null;
     setAnalysisStatus("idle");
     setAnalysisError(null);
     try {
