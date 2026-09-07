@@ -185,7 +185,7 @@ function StudyScreen() {
           )}
 
 
-          <TopicChat ranked={ranked} />
+          <TopicChat ranked={ranked} material={content} />
         </div>
 
         <div className="mt-10 flex items-center gap-3">
@@ -222,7 +222,13 @@ const QUICK_PROMPTS = [
   "Explain in Hindi",
 ];
 
-function TopicChat({ ranked }: { ranked: RankedTopic }) {
+function TopicChat({
+  ranked,
+  material,
+}: {
+  ranked: RankedTopic;
+  material: { explanation: string; keyConcepts: string[]; practiceQuestion: string };
+}) {
   const { strategy, syllabusText, pyqTexts } = useSession();
   const { topic } = ranked;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
