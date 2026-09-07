@@ -126,51 +126,64 @@ function StudyScreen() {
         <div className="space-y-10">
           <section>
             <h2 className="label-mono text-ember mb-3 font-bold">Understand</h2>
-            <p className="text-base leading-relaxed text-pretty">{topic.explanation}</p>
-          </section>
-
-          <section>
-            <h2 className="label-mono text-ember mb-3 font-bold">Key concepts</h2>
-            <ul className="flex flex-wrap gap-2">
-              {topic.keyConcepts.map((concept) => (
-                <li
-                  key={concept}
-                  className="border-border bg-card rounded-lg border px-3 py-2 text-xs font-medium"
-                >
-                  {concept}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="bg-foreground text-background rounded-2xl p-6">
-            <h2 className="label-mono mb-3 font-bold opacity-50">Practice</h2>
-            <p className="mb-6 font-bold italic">“{topic.practiceQuestion}”</p>
-
-            {showFramework ? (
-              <ol className="space-y-3">
-                {topic.answerFramework.map((line, index) => (
-                  <li key={line} className="flex gap-3 text-sm leading-relaxed">
-                    <span className="label-mono shrink-0 pt-1 opacity-50">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="opacity-90">{line}</span>
-                  </li>
-                ))}
-              </ol>
+            {loadingDetail ? (
+              <p className="text-muted-foreground text-sm">Preparing your study material…</p>
+            ) : detailError ? (
+              <p className="text-ember text-sm font-medium" role="alert">
+                {detailError}
+              </p>
             ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowFramework(true);
-                  setStep(2);
-                }}
-                className="w-full rounded-xl border border-current/20 py-4 text-sm font-bold transition-colors active:bg-background/10"
-              >
-                Generate Answer Framework
-              </button>
+              <p className="text-base leading-relaxed text-pretty">{content.explanation}</p>
             )}
           </section>
+
+          {content.keyConcepts.length > 0 && (
+            <section>
+              <h2 className="label-mono text-ember mb-3 font-bold">Key concepts</h2>
+              <ul className="flex flex-wrap gap-2">
+                {content.keyConcepts.map((concept) => (
+                  <li
+                    key={concept}
+                    className="border-border bg-card rounded-lg border px-3 py-2 text-xs font-medium"
+                  >
+                    {concept}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {content.practiceQuestion && (
+            <section className="bg-foreground text-background rounded-2xl p-6">
+              <h2 className="label-mono mb-3 font-bold opacity-50">Practice</h2>
+              <p className="mb-6 font-bold italic">“{content.practiceQuestion}”</p>
+
+              {showFramework ? (
+                <ol className="space-y-3">
+                  {content.answerFramework.map((line, index) => (
+                    <li key={line} className="flex gap-3 text-sm leading-relaxed">
+                      <span className="label-mono shrink-0 pt-1 opacity-50">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="opacity-90">{line}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFramework(true);
+                    setStep(2);
+                  }}
+                  className="w-full rounded-xl border border-current/20 py-4 text-sm font-bold transition-colors active:bg-background/10"
+                >
+                  Generate Answer Framework
+                </button>
+              )}
+            </section>
+          )}
+
 
           <TopicChat ranked={ranked} />
         </div>
