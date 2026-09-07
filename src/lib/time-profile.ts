@@ -72,48 +72,51 @@ export function timeProfileFor(totalMinutes: number): TimeProfile {
 
   if (minutes <= 180) {
     return build("sprint", minutes, {
-      label: "Emergency sprint",
-      minTopics: 2,
+      label: "Emergency crash preparation",
+      minTopics: 3,
       maxTopics: 3,
-      practiceShare: 0.25,
+      practiceShare: 0.2,
       revisionShare: 0.1,
       depth: "essentials",
-      breadth: "Only the very highest-value repeated topics. Skip everything else openly.",
+      breadth:
+        "Only the 3 highest-value topics: most repeated in the papers and carrying the highest marks. Skip everything else openly.",
       message: "Emergency plan — only the highest-value repeated topics fit. Skip the rest.",
     });
   }
   if (minutes <= 420) {
     return build("focused", minutes, {
-      label: "Focused push",
-      minTopics: 3,
-      maxTopics: 5,
-      practiceShare: 0.22,
-      revisionShare: 0.12,
+      label: "One-day preparation",
+      minTopics: 4,
+      maxTopics: 4,
+      practiceShare: 0.2,
+      revisionShare: 0.15,
       depth: "standard",
-      breadth: "Be selective: the most frequently repeated topics plus one safety topic.",
-      message: "Focused push — the highest-value topics, then quick practice and revision.",
+      breadth:
+        "Be selective: the 4 most repeated / highest-mark topics only, no attempt at full coverage.",
+      message: "One-day plan — the highest-value topics, then practice and revision.",
     });
   }
   if (minutes <= 1080) {
     return build("coverage", minutes, {
-      label: "Real coverage",
+      label: "Multi-day preparation",
       minTopics: 5,
-      maxTopics: 7,
+      maxTopics: 6,
       practiceShare: 0.2,
-      revisionShare: 0.15,
+      revisionShare: 0.2,
       depth: "standard",
-      breadth: "Cover every major syllabus unit at least once, deeper on repeated topics.",
-      message: "Broader plan — every major unit gets a pass, with real practice time.",
+      breadth: "Broader coverage: touch every major syllabus unit, deeper on repeated topics.",
+      message: "Multi-day plan — every major unit gets a pass, with real practice time.",
     });
   }
   return build("systematic", minutes, {
-    label: "Systematic preparation",
+    label: "Extended preparation",
     minTopics: 7,
     maxTopics: 10,
     practiceShare: 0.2,
-    revisionShare: 0.2,
+    revisionShare: 0.25,
     depth: "thorough",
-    breadth: "Full syllabus coverage, unit by unit, with two revision passes.",
+    breadth:
+      "Broadest reasonable coverage: the full syllabus unit by unit, with two revision passes.",
     message: "Full runway — work through the syllabus unit by unit, then revise twice.",
   });
 }
