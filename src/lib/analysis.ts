@@ -78,20 +78,6 @@ function scoreTopic(topic: Topic, goal: Goal): number {
   return frequency * 0.7 + weight * 0.3;
 }
 
-/** Mock rule: message tone depends only on the selected time budget. */
-function timeMessageFor(totalMinutes: number): string {
-  if (totalMinutes <= 180) {
-    return "Emergency plan — only the most important topics fit. Skip everything else.";
-  }
-  if (totalMinutes <= 420) {
-    return "Focused push — the highest-value topics plus a quick pass over the rest.";
-  }
-  if (totalMinutes <= 1080) {
-    return "Broader plan — enough time to cover most of the syllabus properly.";
-  }
-  return "Full runway — work through the syllabus systematically.";
-}
-
 function priorityFor(score: number, max: number): Priority {
   const ratio = max === 0 ? 0 : score / max;
   if (ratio >= 0.9) return "very_high";
