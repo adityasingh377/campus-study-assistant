@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { BackLink, BottomNav, Screen } from "@/components/app-chrome";
 import { useSession } from "@/lib/session";
 import { askTopicQuestion } from "@/lib/topic-chat.functions";
+import { getTopicDetail, type TopicDetail } from "@/lib/exam-analysis.functions";
+import { timeProfileFor } from "@/lib/time-profile";
 import type { RankedTopic } from "@/lib/analysis";
 import { cn } from "@/lib/utils";
 
