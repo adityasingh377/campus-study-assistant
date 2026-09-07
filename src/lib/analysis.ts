@@ -132,10 +132,10 @@ export function analyzeExam(input: {
     return { topic, score, priority, reasons: reasonsFor(topic, goal, priority) };
   });
 
-  // Time remaining decides how much actually fits into "Study First".
-  const budget = Math.round(totalMinutes * 0.8);
-  // With very little time left, keep the list short enough to act on.
-  const maxFirst = totalMinutes <= 180 ? 3 : totalMinutes <= 420 ? 4 : 6;
+  // The time profile decides how much actually fits into "Study First".
+  const profile = timeProfileFor(totalMinutes);
+  const budget = profile.studyMinutes;
+  const maxFirst = profile.maxTopics;
   const studyFirst: RankedTopic[] = [];
   const studyLater: RankedTopic[] = [];
   let used = 0;
@@ -160,7 +160,7 @@ export function analyzeExam(input: {
     goalLabel: GOAL_LABEL[goal],
     timeLabel,
     totalMinutes,
-    timeMessage: timeMessageFor(totalMinutes),
+    timeMessage: profile.message,
     studyFirst,
     studyLater,
     totalPapers: PYQ_YEARS,
