@@ -30,15 +30,72 @@ export const Route = createFileRoute("/study/$topicId")({
 
 function StudyScreen() {
   const { topicId } = Route.useParams();
-  const { strategy } = useSession();
+  const { strategy, syllabusText, pyqTexts } = useSession();
   const [step, setStep] = useState(1);
   const [showFramework, setShowFramework] = useState(false);
+  const [detail, setDetail] = useState<TopicDetail | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const ranked = [...strategy.studyFirst, ...strategy.studyLater].find(
     (item) => item.topic.id === topicId,
   );
-  if (!ranked) return null;
-  const { topic } = ranked;
+
+  const topic = ranked?.topic;
+  const needsDetail = !!topic && topic.explanation.trim().length === 0;
+
+  // The plan request stays fast by leaving the long study material out; it is
+  // generated the first time a topic is opened.
+  useEffect(() => {
+    if (!topic || !needsDetail) return;
+    let active = true;
+    setDetail(null);
+    setDetailError(null);
+    getTopicDetail({
+      data: {
+        topicName: topic.name,
+        unit: topic.unit,
+        questionType: topic.questionType,
+        estimatedMinutes: topic.estimatedMinutes,
+        depth: timeProfileFor(strategy.totalMinutes).depth,
+        goalLabel: strategy.goalLabel,
+        syllabusText: syllabusText?.text ?? "",
+        pyqText: pyqTexts.map((d) => `--- ${d.name} ---\n${d.text}`).join("\n\n"),
+      },
+    })
+      .then((result) => {
+        if (active) setDetail(result);
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setDetailError(
+            err instanceof Error
+              ? err.message
+              : "Couldn't load the study material. Please try again.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topic?.id, needsDetail]);
+
+  if (!ranked || !topic) return null;
+
+  const content = needsDetail
+    ? {
+        explanation: detail?.explanation ?? "",
+        keyConcepts: detail?.keyConcepts ?? [],
+        practiceQuestion: detail?.practiceQuestion ?? "",
+        answerFramework: detail?.answerFramework ?? [],
+      }
+    : {
+        explanation: topic.explanation,
+        keyConcepts: topic.keyConcepts,
+        practiceQuestion: topic.practiceQuestion,
+        answerFramework: topic.answerFramework,
+      };
+  const loadingDetail = needsDetail && !detail && !detailError;
 
   const totalSteps = 3;
   const progress = Math.round((step / totalSteps) * 100);
