@@ -78,20 +78,6 @@ function scoreTopic(topic: Topic, goal: Goal): number {
   return frequency * 0.7 + weight * 0.3;
 }
 
-/** Mock rule: message tone depends only on the selected time budget. */
-function timeMessageFor(totalMinutes: number): string {
-  if (totalMinutes <= 180) {
-    return "Emergency plan — only the most important topics fit. Skip everything else.";
-  }
-  if (totalMinutes <= 420) {
-    return "Focused push — the highest-value topics plus a quick pass over the rest.";
-  }
-  if (totalMinutes <= 1080) {
-    return "Broader plan — enough time to cover most of the syllabus properly.";
-  }
-  return "Full runway — work through the syllabus systematically.";
-}
-
 function priorityFor(score: number, max: number): Priority {
   const ratio = max === 0 ? 0 : score / max;
   if (ratio >= 0.9) return "very_high";
@@ -132,10 +118,10 @@ export function analyzeExam(input: {
     return { topic, score, priority, reasons: reasonsFor(topic, goal, priority) };
   });
 
-  // Time remaining decides how much actually fits into "Study First".
-  const budget = Math.round(totalMinutes * 0.8);
-  // With very little time left, keep the list short enough to act on.
-  const maxFirst = totalMinutes <= 180 ? 3 : totalMinutes <= 420 ? 4 : 6;
+  // The time profile decides how much actually fits into "Study First".
+  const profile = timeProfileFor(totalMinutes);
+  const budget = profile.studyMinutes;
+  const maxFirst = profile.maxTopics;
   const studyFirst: RankedTopic[] = [];
   const studyLater: RankedTopic[] = [];
   let used = 0;
@@ -160,7 +146,7 @@ export function analyzeExam(input: {
     goalLabel: GOAL_LABEL[goal],
     timeLabel,
     totalMinutes,
-    timeMessage: timeMessageFor(totalMinutes),
+    timeMessage: profile.message,
     studyFirst,
     studyLater,
     totalPapers: PYQ_YEARS,

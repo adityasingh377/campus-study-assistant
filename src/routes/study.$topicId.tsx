@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { BackLink, BottomNav, Screen } from "@/components/app-chrome";
 import { useSession } from "@/lib/session";
 import { askTopicQuestion } from "@/lib/topic-chat.functions";
+import { getTopicDetail, type TopicDetail } from "@/lib/exam-analysis.functions";
+import { timeProfileFor } from "@/lib/time-profile";
 import type { RankedTopic } from "@/lib/analysis";
 import { cn } from "@/lib/utils";
 
@@ -30,15 +32,72 @@ export const Route = createFileRoute("/study/$topicId")({
 
 function StudyScreen() {
   const { topicId } = Route.useParams();
-  const { strategy } = useSession();
+  const { strategy, syllabusText, pyqTexts } = useSession();
   const [step, setStep] = useState(1);
   const [showFramework, setShowFramework] = useState(false);
+  const [detail, setDetail] = useState<TopicDetail | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const ranked = [...strategy.studyFirst, ...strategy.studyLater].find(
     (item) => item.topic.id === topicId,
   );
-  if (!ranked) return null;
-  const { topic } = ranked;
+
+  const topic = ranked?.topic;
+  const needsDetail = !!topic && topic.explanation.trim().length === 0;
+
+  // The plan request stays fast by leaving the long study material out; it is
+  // generated the first time a topic is opened.
+  useEffect(() => {
+    if (!topic || !needsDetail) return;
+    let active = true;
+    setDetail(null);
+    setDetailError(null);
+    getTopicDetail({
+      data: {
+        topicName: topic.name,
+        unit: topic.unit,
+        questionType: topic.questionType,
+        estimatedMinutes: topic.estimatedMinutes,
+        depth: timeProfileFor(strategy.totalMinutes).depth,
+        goalLabel: strategy.goalLabel,
+        syllabusText: syllabusText?.text ?? "",
+        pyqText: pyqTexts.map((d) => `--- ${d.name} ---\n${d.text}`).join("\n\n"),
+      },
+    })
+      .then((result) => {
+        if (active) setDetail(result);
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setDetailError(
+            err instanceof Error
+              ? err.message
+              : "Couldn't load the study material. Please try again.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topic?.id, needsDetail]);
+
+  if (!ranked || !topic) return null;
+
+  const content = needsDetail
+    ? {
+        explanation: detail?.explanation ?? "",
+        keyConcepts: detail?.keyConcepts ?? [],
+        practiceQuestion: detail?.practiceQuestion ?? "",
+        answerFramework: detail?.answerFramework ?? [],
+      }
+    : {
+        explanation: topic.explanation,
+        keyConcepts: topic.keyConcepts,
+        practiceQuestion: topic.practiceQuestion,
+        answerFramework: topic.answerFramework,
+      };
+  const loadingDetail = needsDetail && !detail && !detailError;
 
   const totalSteps = 3;
   const progress = Math.round((step / totalSteps) * 100);
@@ -67,53 +126,66 @@ function StudyScreen() {
         <div className="space-y-10">
           <section>
             <h2 className="label-mono text-ember mb-3 font-bold">Understand</h2>
-            <p className="text-base leading-relaxed text-pretty">{topic.explanation}</p>
-          </section>
-
-          <section>
-            <h2 className="label-mono text-ember mb-3 font-bold">Key concepts</h2>
-            <ul className="flex flex-wrap gap-2">
-              {topic.keyConcepts.map((concept) => (
-                <li
-                  key={concept}
-                  className="border-border bg-card rounded-lg border px-3 py-2 text-xs font-medium"
-                >
-                  {concept}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="bg-foreground text-background rounded-2xl p-6">
-            <h2 className="label-mono mb-3 font-bold opacity-50">Practice</h2>
-            <p className="mb-6 font-bold italic">“{topic.practiceQuestion}”</p>
-
-            {showFramework ? (
-              <ol className="space-y-3">
-                {topic.answerFramework.map((line, index) => (
-                  <li key={line} className="flex gap-3 text-sm leading-relaxed">
-                    <span className="label-mono shrink-0 pt-1 opacity-50">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="opacity-90">{line}</span>
-                  </li>
-                ))}
-              </ol>
+            {loadingDetail ? (
+              <p className="text-muted-foreground text-sm">Preparing your study material…</p>
+            ) : detailError ? (
+              <p className="text-ember text-sm font-medium" role="alert">
+                {detailError}
+              </p>
             ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowFramework(true);
-                  setStep(2);
-                }}
-                className="w-full rounded-xl border border-current/20 py-4 text-sm font-bold transition-colors active:bg-background/10"
-              >
-                Generate Answer Framework
-              </button>
+              <p className="text-base leading-relaxed text-pretty">{content.explanation}</p>
             )}
           </section>
 
-          <TopicChat ranked={ranked} />
+          {content.keyConcepts.length > 0 && (
+            <section>
+              <h2 className="label-mono text-ember mb-3 font-bold">Key concepts</h2>
+              <ul className="flex flex-wrap gap-2">
+                {content.keyConcepts.map((concept) => (
+                  <li
+                    key={concept}
+                    className="border-border bg-card rounded-lg border px-3 py-2 text-xs font-medium"
+                  >
+                    {concept}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {content.practiceQuestion && (
+            <section className="bg-foreground text-background rounded-2xl p-6">
+              <h2 className="label-mono mb-3 font-bold opacity-50">Practice</h2>
+              <p className="mb-6 font-bold italic">“{content.practiceQuestion}”</p>
+
+              {showFramework ? (
+                <ol className="space-y-3">
+                  {content.answerFramework.map((line, index) => (
+                    <li key={line} className="flex gap-3 text-sm leading-relaxed">
+                      <span className="label-mono shrink-0 pt-1 opacity-50">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="opacity-90">{line}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFramework(true);
+                    setStep(2);
+                  }}
+                  className="w-full rounded-xl border border-current/20 py-4 text-sm font-bold transition-colors active:bg-background/10"
+                >
+                  Generate Answer Framework
+                </button>
+              )}
+            </section>
+          )}
+
+
+          <TopicChat ranked={ranked} material={content} />
         </div>
 
         <div className="mt-10 flex items-center gap-3">
@@ -150,7 +222,13 @@ const QUICK_PROMPTS = [
   "Explain in Hindi",
 ];
 
-function TopicChat({ ranked }: { ranked: RankedTopic }) {
+function TopicChat({
+  ranked,
+  material,
+}: {
+  ranked: RankedTopic;
+  material: { explanation: string; keyConcepts: string[]; practiceQuestion: string };
+}) {
   const { strategy, syllabusText, pyqTexts } = useSession();
   const { topic } = ranked;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -190,9 +268,9 @@ function TopicChat({ ranked }: { ranked: RankedTopic }) {
             name: topic.name,
             unit: topic.unit,
             summary: topic.summary,
-            explanation: topic.explanation,
-            keyConcepts: topic.keyConcepts,
-            practiceQuestion: topic.practiceQuestion,
+            explanation: material.explanation,
+            keyConcepts: material.keyConcepts,
+            practiceQuestion: material.practiceQuestion,
             estimatedMinutes: topic.estimatedMinutes,
           },
           syllabusText: syllabusText?.text ?? "",

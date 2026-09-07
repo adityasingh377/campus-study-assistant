@@ -152,6 +152,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setPyqStatus("idle");
     setPyqError(null);
     setAiStrategy(null);
+    analysisKey.current = null;
     setAnalysisStatus("idle");
     setAnalysisError(null);
     try {
@@ -312,15 +313,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         },
       });
       setAiStrategy(result);
+      analysisKey.current = key;
       setAnalysisStatus("done");
     } catch (err) {
       setAiStrategy(null);
+      analysisKey.current = null;
       setAnalysisStatus("error");
       setAnalysisError(
         err instanceof Error ? err.message : "AI analysis failed. Please try again.",
       );
     }
-  }, [syllabusText, syllabusFile, pyqTexts, pyqFiles, timing, state.goal]);
+  }, [
+    aiStrategy,
+    syllabusText,
+    syllabusFile,
+    pyqTexts,
+    pyqFiles,
+    timing,
+    state.goal,
+    state.timeId,
+    state.customMinutes,
+  ]);
 
 
   const value = useMemo(
