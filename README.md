@@ -2,7 +2,7 @@
 
 > An AI-powered exam preparation assistant that helps college students decide what to study first when exam time is limited.
 
-🔗 **Live Demo:** https://YOUR-LIVE-DEMO-LINK
+🔗 **Live Demo:** https://campus-study-assistant.lovable.app
 
 ---
 
