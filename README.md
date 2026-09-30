@@ -106,3 +106,31 @@ Study a Topic
 AI-generated Study Content
        ↓
 Ask Follow-up Questions
+## 📱 Product Screens
+
+### Product Screen 1
+![Product Screen 1](screenshots/IMG_4629.jpeg)
+
+### Product Screen 2
+![Product Screen 2](screenshots/IMG_4630.jpeg)
+
+### Product Screen 3
+![Product Screen 3](screenshots/IMG_4631.jpeg)
+
+### Product Screen 4
+![Product Screen 4](screenshots/IMG_4632.jpeg)
+
+### Product Screen 5
+![Product Screen 5](screenshots/IMG_4633.jpeg)
+
+### Product Screen 6
+![Product Screen 6](screenshots/IMG_4634.jpeg)
+
+### Product Screen 7
+![Product Screen 7](screenshots/IMG_4635.jpeg)
+
+### Product Screen 8
+![Product Screen 8](screenshots/IMG_4636.jpeg)
+
+### Product Screen 9
+![Product Screen 9](screenshots/IMG_4637.jpeg)
